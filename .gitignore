@@ -1,0 +1,13 @@
+sdk/
+tmp-repack/
+*.ipk
+*.apk
+*.log
+vm-backup-legacy-current/
+github-release-upload/
+*.tar.gz
+!dist/
+!dist/*.ipk
+!dist/*.apk
+!dist/*.sh
+!dist/*.md

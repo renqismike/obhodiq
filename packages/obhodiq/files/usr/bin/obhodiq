@@ -1,0 +1,173 @@
+#!/bin/sh
+
+set -eu
+
+LIB_DIR="/usr/lib/obhodiq"
+
+. "$LIB_DIR/common.sh"
+. "$LIB_DIR/subscription.sh"
+. "$LIB_DIR/storage.sh"
+. "$LIB_DIR/ping.sh"
+
+cmd="${1:-help}"
+
+case "$cmd" in
+  fetch)
+    fetch_subscription
+    ;;
+  parse)
+    parse_subscription
+    ;;
+  refresh)
+    fetch_subscription && parse_subscription
+    ;;
+  refresh-apply)
+    fetch_subscription && parse_subscription && apply_podkop_config
+    ;;
+  select-best)
+    select_best_server
+    ;;
+  select-best-apply)
+    select_best_server
+    apply_podkop_config
+    ;;
+  refresh-latency)
+    refresh_latency_cache
+    ;;
+  get-url)
+    get_subscription_url
+    ;;
+  set-url)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-url <subscription-url>"
+      exit 1
+    }
+    set_subscription_url "$2"
+    ;;
+  get-update-schedule)
+    get_update_schedule
+    ;;
+  get-enabled)
+    get_manager_enabled
+    ;;
+  get-lang)
+    get_manager_lang
+    ;;
+  set-update-schedule)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-update-schedule <never|30m|1h|3h|6h|12h|24h>"
+      exit 1
+    }
+    set_update_schedule "$2"
+    ;;
+  set-enabled)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-enabled <0|1>"
+      exit 1
+    }
+    set_manager_enabled "$2"
+    ;;
+  set-lang)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-lang <en|ru>"
+      exit 1
+    }
+    set_manager_lang "$2"
+    ;;
+  set-active)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-active <server-id>"
+      exit 1
+    }
+    set_active_server "$2"
+    ;;
+  set-mode)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-mode <auto|manual>"
+      exit 1
+    }
+    set_selection_mode "$2"
+    ;;
+  set-group)
+    [ $# -ge 3 ] || {
+      log_msg "usage: obhodiq set-group <server-id> <group>"
+      exit 1
+    }
+    set_server_group "$2" "$3"
+    ;;
+  set-active-group)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-active-group <group>"
+      exit 1
+    }
+    set_active_group "$2"
+    ;;
+  exclude)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq exclude <server-id>"
+      exit 1
+    }
+    set_server_excluded "$2" true
+    ;;
+  include)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq include <server-id>"
+      exit 1
+    }
+    set_server_excluded "$2" false
+    ;;
+  export-active)
+    export_active_server
+    ;;
+  sync-podkop)
+    sync_podkop_export
+    ;;
+  write-podkop-apply)
+    write_podkop_apply_script
+    ;;
+  apply-podkop)
+    apply_podkop_config
+    ;;
+  status)
+    print_status
+    ;;
+  list-servers)
+    list_servers
+    ;;
+  list-groups)
+    list_groups
+    ;;
+  help|*)
+    cat <<'EOF'
+Usage:
+  obhodiq fetch
+  obhodiq parse
+  obhodiq refresh
+  obhodiq refresh-apply
+  obhodiq select-best
+  obhodiq select-best-apply
+  obhodiq refresh-latency
+  obhodiq get-url
+  obhodiq get-update-schedule
+  obhodiq get-enabled
+  obhodiq get-lang
+  obhodiq set-url <subscription-url>
+  obhodiq set-update-schedule <never|30m|1h|3h|6h|12h|24h>
+  obhodiq set-enabled <0|1>
+  obhodiq set-lang <en|ru>
+  obhodiq set-mode <auto|manual>
+  obhodiq set-active <server-id>
+  obhodiq set-group <server-id> <group>
+  obhodiq set-active-group <group>
+  obhodiq exclude <server-id>
+  obhodiq include <server-id>
+  obhodiq export-active
+  obhodiq sync-podkop
+  obhodiq write-podkop-apply
+  obhodiq apply-podkop
+  obhodiq status
+  obhodiq list-servers
+  obhodiq list-groups
+EOF
+    ;;
+esac

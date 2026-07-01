@@ -1,0 +1,9 @@
+*.sh text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*/Makefile text eol=lf
+packages/obhodiq/files/etc/config/obhodiq text eol=lf
+packages/obhodiq/files/etc/init.d/obhodiq text eol=lf
+packages/obhodiq/files/usr/bin/obhodiq text eol=lf
+packages/obhodiq/files/www/cgi-bin/obhodiq text eol=lf
+packages/obhodiq/files/usr/lib/obhodiq/* text eol=lf

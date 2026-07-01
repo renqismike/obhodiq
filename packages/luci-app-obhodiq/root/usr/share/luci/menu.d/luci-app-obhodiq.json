@@ -1,0 +1,13 @@
+{
+  "admin/services/obhodiq": {
+    "title": "Obhodiq",
+    "order": 95,
+    "action": {
+      "type": "view",
+      "path": "obhodiq/main"
+    },
+    "depends": {
+      "acl": [ "luci-base" ]
+    }
+  }
+}

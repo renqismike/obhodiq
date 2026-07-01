@@ -1,0 +1,96 @@
+#!/bin/sh
+
+get_query_value() {
+  key="$1"
+  printf '%s' "$QUERY" | tr '&' '\n' | sed -n "s/^${key}=//p" | head -n 1
+}
+
+urldecode() {
+  value="$1"
+  value="$(printf '%s' "$value" | sed 's/+/ /g; s/%/\\x/g')"
+  printf '%b' "$value"
+}
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\r/\\r/g; s/\n/\\n/g'
+}
+
+QUERY="${QUERY_STRING:-}"
+[ -n "$QUERY" ] || case "${REQUEST_URI:-}" in
+  *\?*) QUERY="${REQUEST_URI#*\?}" ;;
+esac
+
+if [ "${REQUEST_METHOD:-GET}" = "POST" ]; then
+  if [ -n "${CONTENT_LENGTH:-}" ] && [ "${CONTENT_LENGTH:-0}" -gt 0 ] 2>/dev/null; then
+    POST_DATA="$(dd bs=1 count="$CONTENT_LENGTH" 2>/dev/null || true)"
+  else
+    POST_DATA="$(cat || true)"
+  fi
+
+  if [ -n "${POST_DATA:-}" ]; then
+    if [ -n "$QUERY" ]; then
+      QUERY="$QUERY&$POST_DATA"
+    else
+      QUERY="$POST_DATA"
+    fi
+  fi
+fi
+
+cmd="$(get_query_value cmd)"
+id="$(get_query_value id)"
+mode="$(get_query_value mode)"
+group="$(get_query_value group)"
+url="$(get_query_value url)"
+schedule="$(get_query_value schedule)"
+enabled="$(get_query_value enabled)"
+lang="$(get_query_value lang)"
+
+id="$(urldecode "$id")"
+mode="$(urldecode "$mode")"
+group="$(urldecode "$group")"
+url="$(urldecode "$url")"
+schedule="$(urldecode "$schedule")"
+enabled="$(urldecode "$enabled")"
+lang="$(urldecode "$lang")"
+
+echo "Content-Type: application/json"
+echo ""
+
+case "$cmd" in
+  fetch|parse|refresh|refresh-apply|select-best|select-best-apply|refresh-latency|get-url|get-update-schedule|get-enabled|get-lang|export-active|sync-podkop|write-podkop-apply|apply-podkop|status|list-servers|list-groups)
+    /usr/bin/obhodiq "$cmd"
+    ;;
+  set-url)
+    /usr/bin/obhodiq set-url "$url"
+    ;;
+  set-update-schedule)
+    /usr/bin/obhodiq set-update-schedule "$schedule"
+    ;;
+  set-enabled)
+    /usr/bin/obhodiq set-enabled "$enabled"
+    ;;
+  set-lang)
+    /usr/bin/obhodiq set-lang "$lang"
+    ;;
+  set-mode)
+    /usr/bin/obhodiq set-mode "$mode"
+    ;;
+  set-active)
+    /usr/bin/obhodiq set-active "$id"
+    ;;
+  set-group)
+    /usr/bin/obhodiq set-group "$id" "$group"
+    ;;
+  set-active-group)
+    /usr/bin/obhodiq set-active-group "$group"
+    ;;
+  exclude)
+    /usr/bin/obhodiq exclude "$id"
+    ;;
+  include)
+    /usr/bin/obhodiq include "$id"
+    ;;
+  *)
+    printf '{"ok":false,"message":"unknown or empty command"}\n'
+    ;;
+esac
