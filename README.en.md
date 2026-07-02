@@ -32,7 +32,7 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 3. Supported servers are prepared and exported to Podkop.
 4. Podkop then handles routing, `URLTest`, manual switching, and latency.
 
-## Supported subscription formats
+## Formats the parser can read
 
 Obhodiq is aimed at the kinds of subscriptions commonly used by VPN providers today: mainly V2Ray / Xray / sing-box style subscriptions and some provider-side wrapper formats.
 
@@ -43,7 +43,7 @@ The parser currently handles:
 - many JSON-based subscription payloads
 - HAPP-style wrappers such as `happ://add/https://...`
 
-Link families currently parsed:
+Link families the parser can currently recognize and parse:
 
 - `vless://`
 - `vmess://`
@@ -55,9 +55,14 @@ Link families currently parsed:
 - `hysteria://`
 - `hysteria2://`
 
-## Compatibility
+## What this means in practice
 
-Obhodiq is responsible for parsing the subscription and preparing the server list. After that, Podkop decides what it can actually apply, ping, and use successfully.
+It is important to separate two things:
+
+1. Obhodiq managed to parse the link and add the server to the list.
+2. Podkop managed to actually apply that server, ping it, and use it successfully.
+
+Obhodiq is only responsible for the first part. After that, Podkop decides what it can actually apply, ping, and use.
 
 Currently hard-filtered before export:
 
@@ -70,6 +75,12 @@ Additional notes:
 - `WS`, `GRPC`, `Hysteria`, and similar formats may parse correctly, but actual behavior still depends on Podkop, `sing-box`, and the provider
 - Podkop uses `sing-box`, so support for `VLESS`, `WS`, `Reality`, and other transport-dependent formats depends on `sing-box` capabilities
 - for more complex cases, Podkop also supports manual configuration through `Outbound Config`
+
+Based on current testing:
+
+- standard `VLESS` subscriptions are the best-verified path for `URLTest` in Podkop
+- `Trojan`, `Shadowsocks`, `Socks`, `Hysteria2`, `VMess`, and other link families are parsed by Obhodiq, but this does not mean every such server is guaranteed to work in Podkop with every provider
+- if a server has no ping, it does not automatically mean the link is broken; it means Podkop did not return usable latency for that server in the current setup
 
 Useful references:
 
@@ -158,6 +169,7 @@ Server list:
 - if a server appears in the list, it means Obhodiq managed to parse it
 - if a server has ping, it means Podkop returned latency for it
 - if a server has no ping, it does not always mean the link is broken, but it does mean that in Podkop this server did not return usable latency
+- a link family being listed in this README means parser support in Obhodiq, not an unconditional guarantee that every server of that family will work with every provider
 
 ## Testing status
 
