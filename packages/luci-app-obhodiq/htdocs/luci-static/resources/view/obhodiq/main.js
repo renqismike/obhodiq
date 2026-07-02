@@ -364,6 +364,7 @@ return view.extend({
       applyTimer: null,
       applyInFlight: false,
       applyRevision: 0,
+      passiveLatencyTrackingUntil: 0,
       statusPollTimer: null,
       statusRequestSeq: 0,
       statusAppliedSeq: 0,
@@ -562,10 +563,36 @@ return view.extend({
       var notices = Array.isArray(meta.notices) ? meta.notices.filter(function (item) {
         return !!item;
       }) : [];
-      var summaryMessages = notices.slice();
-      if (meta.announce) {
-        summaryMessages.unshift(meta.announce);
+      var summaryMessages = [];
+      var seenSummaryMessages = {};
+      var announceText = String(meta.announce || '').trim();
+      var announceParts = announceText
+        ? announceText.split(/\n+/).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
+        : [];
+
+      function pushSummaryMessage(message) {
+        var text = String(message || '').trim();
+        if (!text || seenSummaryMessages[text]) {
+          return;
+        }
+        seenSummaryMessages[text] = true;
+        summaryMessages.push(text);
       }
+
+      if (announceText) {
+        pushSummaryMessage(announceText);
+      }
+
+      notices.forEach(function (item) {
+        var text = String(item || '').trim();
+        if (!text) {
+          return;
+        }
+        if (announceText && (announceText.indexOf(text) >= 0 || announceParts.indexOf(text) >= 0)) {
+          return;
+        }
+        pushSummaryMessage(text);
+      });
       setUiLang(data.lang || 'en');
       updateStaticTexts();
       scheduleSelect.innerHTML = '';
@@ -791,6 +818,10 @@ return view.extend({
           renderTable(data);
           if (data.subscription_error && data.subscription_error.message) {
             setInfo(data.subscription_error.message, true);
+          } else if (state.latencyRefreshActive) {
+            setInfo(formatLatencyProgressMessage(data, false), false);
+          } else if (isPassiveLatencyTrackingActive(data)) {
+            setInfo(formatLatencyProgressMessage(data, false), false);
           } else if (data.meta && Array.isArray(data.meta.notices) && data.meta.notices.length) {
             setInfo(data.meta.notices[0], false);
           } else if (data.meta && data.meta.announce) {
@@ -805,7 +836,7 @@ return view.extend({
     }
 
     function getExpectedLatencyCount(data) {
-      return Math.max(0, Number(data && data.enabled_count || 0));
+      return Math.max(0, Number((data && (data.enabled_count || data.supported_count)) || 0));
     }
 
     function getCurrentLatencyCount(data) {
@@ -817,6 +848,14 @@ return view.extend({
       state.latencyRefreshStartedAt = 0;
       state.latencyLastCount = -1;
       state.latencyStableRounds = 0;
+    }
+
+    function isPassiveLatencyTrackingActive(data) {
+      if (!state.passiveLatencyTrackingUntil || Date.now() > state.passiveLatencyTrackingUntil) {
+        state.passiveLatencyTrackingUntil = 0;
+        return false;
+      }
+      return getExpectedLatencyCount(data) > 0 && getCurrentLatencyCount(data) < getExpectedLatencyCount(data);
     }
 
     function formatLatencyProgressMessage(data, finished) {
@@ -857,12 +896,14 @@ return view.extend({
 
           if (total > 0 && current >= total) {
             stopLatencyProgress();
+            state.passiveLatencyTrackingUntil = 0;
             setInfo(t('ping_updated'), false);
             return;
           }
 
           if (timedOut || state.latencyStableRounds >= 3) {
             stopLatencyProgress();
+            state.passiveLatencyTrackingUntil = 0;
             setInfo(formatLatencyProgressMessage(state.data, true), false);
             return;
           }
@@ -898,6 +939,7 @@ return view.extend({
 
     function refreshSubscription() {
       state.statusSuspend = true;
+      state.passiveLatencyTrackingUntil = Date.now() + 90000;
       setButtonBusy(refreshSubButton, true, t('refreshing_sub'));
       setInfo(t('refreshing_sub'), false);
       clearSubscriptionView();
@@ -910,7 +952,12 @@ return view.extend({
         })
         .then(function () {
           if (!state.data || !state.data.subscription_error || !state.data.subscription_error.message) {
-            setInfo(t('sub_updated'), false);
+            if (isPassiveLatencyTrackingActive(state.data)) {
+              setInfo(formatLatencyProgressMessage(state.data, false), false);
+            } else {
+              state.passiveLatencyTrackingUntil = 0;
+              setInfo(t('sub_updated'), false);
+            }
           }
         })
         .catch(function (e) {
@@ -968,6 +1015,7 @@ return view.extend({
 
     function refreshLatency() {
       stopLatencyProgress();
+      state.passiveLatencyTrackingUntil = Date.now() + 90000;
       setButtonBusy(refreshPingButton, true, '↻');
       setInfo(t('refreshing_ping'), false);
       clearLatenciesView();
@@ -993,6 +1041,7 @@ return view.extend({
 
           if (total > 0 && current >= total) {
             stopLatencyProgress();
+            state.passiveLatencyTrackingUntil = 0;
             setInfo(t('ping_updated'), false);
             return;
           }

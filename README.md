@@ -1,51 +1,49 @@
 # Obhodiq
 
-[English](README.md) | [Русский](README.ru.md)
+[Русский](README.md) | [English](README.en.md)
 
-Obhodiq is a beta add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWrt.
-
-Most VPN providers now give access through subscription links instead of one ready-to-use config. Obhodiq is made for that workflow: it takes subscription links, turns them into a server list, and passes the result to Podkop so you can keep `URLTest` or select a server manually.
+Obhodiq — это дополнение для [Podkop](https://github.com/itdoginfo/podkop) на OpenWrt. Оно нужно для работы с VPN-подписками: Obhodiq забирает ссылку подписки, разбирает её, собирает из неё список серверов и передаёт результат в Podkop, а Podkop уже занимается маршрутизацией, `URLTest`, ручным выбором и проверкой задержки.
 
 <p align="center">
-  <img src="images/obhodiq-ui.png" alt="Obhodiq interface screenshot" width="1100">
+  <img src="images/obhodiq-ui.png" alt="Скриншот интерфейса Obhodiq" width="1100">
 </p>
 
 > [!IMPORTANT]
-> Obhodiq is **not** a replacement for Podkop. It works **with** the original Podkop and depends on it being installed first.
+> Obhodiq **не заменяет** Podkop. Он работает **только вместе** с оригинальным Podkop и требует, чтобы Podkop был установлен заранее.
 
 > [!WARNING]
-> Obhodiq is currently a **beta release**. Different providers and different subscription styles may behave differently. Users of this release are also effectively beta testers.
+> Сейчас Obhodiq находится в **бета-статусе**. Он уже пригоден для использования, но разные провайдеры, типы подписок и отдельные серверы могут вести себя по-разному.
 
-## What Obhodiq does
+## Что умеет Obhodiq
 
-- imports VPN subscription links
-- fetches and parses supported subscription formats
-- builds a server list for Podkop
-- keeps `URLTest` auto mode available
-- allows manual server selection
-- allows per-server enable/disable
-- shows subscription info, current server, and ping returned by Podkop
-- can refresh the subscription on a schedule
+- принимать VPN-подписки по ссылке
+- разбирать обычные, base64- и многие JSON-подписки
+- вытаскивать из подписки серверы и передавать их в Podkop
+- оставлять `URLTest` для автоматического выбора лучшего сервера
+- давать ручной выбор сервера
+- включать и выключать отдельные серверы
+- показывать информацию о подписке, текущем сервере и пинге от Podkop
+- обновлять подписку вручную и по расписанию
 
-## How it works
+## Как это работает
 
-1. Add a subscription URL.
-2. Obhodiq downloads the subscription and parses the supported links inside it.
-3. The supported servers are prepared and exported for Podkop.
-4. Podkop then handles routing, `URLTest`, and latency checks.
+1. Добавляешь ссылку подписки.
+2. Obhodiq скачивает подписку и разбирает поддерживаемые ссылки внутри неё.
+3. Поддерживаемые серверы подготавливаются и экспортируются в Podkop.
+4. Дальше Podkop уже сам работает с маршрутизацией, `URLTest`, ручным выбором и latency.
 
-## Subscription formats
+## Поддерживаемые форматы подписок
 
-Obhodiq is aimed at the kinds of subscription links commonly used by VPN providers today, especially V2Ray / Xray / sing-box style subscriptions and provider wrappers around them.
+Obhodiq рассчитан на подписки, которые сейчас чаще всего выдают VPN-провайдеры: V2Ray / Xray / sing-box подписки и некоторые провайдерские обёртки вокруг них.
 
-Current parser coverage includes:
+Сейчас парсер умеет работать с:
 
-- plain link lists
-- base64-wrapped link lists
-- many JSON-based subscription payloads
-- HAPP-style wrapper links such as `happ://add/https://...`
+- обычными списками ссылок
+- base64-подписками
+- многими JSON-подписками
+- HAPP-обёртками вида `happ://add/https://...`
 
-Proxy/link families currently handled by the parser:
+Семейства ссылок, которые сейчас умеет обрабатывать парсер:
 
 - `vless://`
 - `vmess://`
@@ -57,105 +55,117 @@ Proxy/link families currently handled by the parser:
 - `hysteria://`
 - `hysteria2://`
 
-## Compatibility notes
+## Совместимость
 
-Obhodiq parses subscriptions and prepares the server list, but Podkop still decides what it can actually run, ping, and use successfully.
+Obhodiq отвечает за разбор подписки и подготовку списка серверов. Дальше уже сам Podkop решает, что он реально может применить, пропинговать и использовать.
 
-Currently hard-filtered before export:
+Что сейчас жёстко отсекается до экспорта:
 
 - `XHTTP`
 
-Other practical notes:
+Дополнительно:
 
-- `happ://add/https://...` is treated as a wrapper format, not as a proxy type itself
-- encrypted `happ://crypt4/...` subscriptions are a separate case and are not claimed as fully supported here
-- `WS`, `GRPC`, `Hysteria` and similar formats may parse correctly but still fail later depending on Podkop support or provider-side server behavior
-- most formats that Podkop handles well should work here too, but not every imported server is guaranteed
+- `happ://add/https://...` считается форматом-обёрткой, а не отдельным типом прокси
+- шифрованные `happ://crypt4/...` не заявляются как полностью поддержанные
+- `WS`, `GRPC`, `Hysteria` и похожие форматы могут нормально распарситься, но их фактическая работа уже зависит от Podkop, `sing-box` и конкретного провайдера
+- Podkop использует `sing-box`, поэтому поддержка `VLESS`, `WS`, `Reality` и других transport-зависимых вариантов определяется возможностями `sing-box`
+- для сложных случаев Podkop также допускает ручную настройку через `Outbound Config`
 
-## Requirements
+Полезные ссылки по этому поводу:
+
+- [Секции Podkop](https://podkop.net/docs/sections/#tip-podklyucheniya-connection-type)
+- [Свой Outbound в Podkop](https://podkop.net/docs/own-outbound/#amnezia-vless)
+
+## Требования
 
 - OpenWrt
-- original [Podkop](https://github.com/itdoginfo/podkop) already installed
-- recommended Podkop versions: `0.7.19`, `0.7.20`
-- recommended OpenWrt versions: `24.10.6`, `25.12.5`
+- уже установленный оригинальный [Podkop](https://github.com/itdoginfo/podkop)
+- рекомендуемые версии Podkop: `0.7.19`, `0.7.20`
+- рекомендуемые версии OpenWrt: `24.10.6`, `25.12.5`
 
-## Install
+## Установка
 
-Install original Podkop first:
+Сначала установи оригинальный Podkop:
 
 ```sh
 sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/main/install.sh)
 ```
 
-Then install Obhodiq:
+Потом установи Obhodiq:
 
 ```sh
 sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh)
 ```
 
-## Manual install
+## Ручная установка
 
-If you prefer manual installation, use the package files from release assets or from the repository `dist/` folder.
+Если нужна ручная установка, используй файлы пакетов из release assets или из папки `dist/` в репозитории.
 
-For OpenWrt with `opkg`:
+Для OpenWrt с `opkg`:
 
 ```sh
 opkg install obhodiq_0.1.0-r2_all.ipk luci-app-obhodiq_0.1.0-r2_all.ipk
 ```
 
-For OpenWrt with `apk`:
+Для OpenWrt с `apk`:
 
 ```sh
 apk add --allow-untrusted obhodiq-0.1.0-r2.apk luci-app-obhodiq-0.1.0-r2.apk
 ```
 
-## Remove
+## Удаление
+
+Полное удаление:
 
 ```sh
 sh uninstall.sh
 ```
 
-Or manually with `opkg`:
+Или вручную через `opkg`:
 
 ```sh
 opkg remove luci-app-obhodiq
 opkg remove obhodiq
 ```
 
-Or manually with `apk`:
+Или вручную через `apk`:
 
 ```sh
 apk del luci-app-obhodiq
 apk del obhodiq
 ```
 
-If you want to guarantee that the saved subscription URL is removed too, use the release `uninstall.sh`.
+`uninstall.sh` дополнительно очищает сохранённую ссылку подписки. При этом Obhodiq должен удаляться без удаления и поломки самого Podkop.
 
-Obhodiq is meant to be removable without removing Podkop itself.
+## Интерфейс
 
-## Interface
+Основные действия:
 
-Main actions:
+- `Сохранить ссылку` — сохраняет ссылку подписки
+- `Обновить подписку` — заново скачивает и пересобирает текущую подписку
+- `Автообновление подписки` — задаёт расписание автообновления
+- кнопка питания — включает или отключает интеграцию Obhodiq
 
-- `Save URL` stores the subscription URL
-- `Refresh subscription` downloads and rebuilds the current subscription
-- `Auto update` sets how often the subscription should refresh automatically
-- the power toggle enables or disables Obhodiq integration
+Список серверов:
 
-Server list:
+- `Авто` оставляет Podkop в режиме `URLTest`
+- радиокнопка переключает между авто-режимом и ручным сервером
+- галочка включает или исключает сервер из экспорта
+- `Пинг` показывает значение, которое вернул Podkop
 
-- `Auto` keeps Podkop in `URLTest` mode
-- the radio button switches between auto mode and a manual server
-- the checkbox enables or disables a server for export
-- `Ping` shows the value returned by Podkop
+## Что важно понимать
 
-## Testing status
+- если сервер попал в список, это значит, что Obhodiq смог его распарсить
+- если у сервера есть пинг, это значит, что Podkop смог вернуть по нему latency
+- если пинга нет, это не всегда означает, что ссылка битая, но это значит, что именно в Podkop такой сервер сейчас не дал нормальный latency
 
-This is still a beta release and has only been checked against a limited set of subscription links from different VPN providers, not against every provider or every subscription style on the market.
+## Проверка и статус
 
-Tested during development on:
+Это всё ещё бета-версия, и она проверялась только на ограниченном наборе подписок от разных VPN-провайдеров, а не на всех возможных вариантах на рынке.
 
-- OpenWrt `24.10.6` with `opkg`
-- OpenWrt `25.12.5` with `apk`
+Во время разработки приложение проверялось на:
+
+- OpenWrt `24.10.6` с `opkg`
+- OpenWrt `25.12.5` с `apk`
 - Podkop `0.7.19-r1`
 - Podkop `0.7.20-r1`

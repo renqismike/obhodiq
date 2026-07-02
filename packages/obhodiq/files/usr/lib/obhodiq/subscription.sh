@@ -130,6 +130,17 @@ is_helper_subscription_entry() {
   return 1
 }
 
+is_auto_profile_name() {
+  name="$1"
+  case "$name" in
+    *"Автоматический выбор"*|*"автоматический выбор"*|*"Automatic selection"*|*"automatic selection"*|*"Automatic choice"*|*"automatic choice"*|*"Самый быстрый"*|*"самый быстрый"*|*"Fastest"*|*"fastest"*|*"URLTest"*|*"urltest"*|*"Авто |"*|*"Авто|"*|*"авто |"*|*"авто|"*|*"Auto |"*|*"Auto|"*|*"auto |"*|*"auto|"*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
 collect_subscription_notices() {
   tmp_notices="$(mktemp)"
   announce_value="$(extract_header_meta_line '[Aa]nnounce')"
@@ -240,11 +251,9 @@ extract_links_from_json_config() {
         protocol="$(printf '%s' "$item" | jq -r '.protocol // empty' 2>/dev/null)"
         tag="$(printf '%s' "$item" | jq -r '.tag // empty' 2>/dev/null)"
         [ -n "${name:-}" ] || continue
-    case "$name" in
-      *"Автоматический выбор"*|*"Automatic"*)
-        continue
-        ;;
-    esac
+    if is_auto_profile_name "$name"; then
+      continue
+    fi
 
     case "$protocol" in
       vless)
@@ -678,6 +687,9 @@ parse_subscription() {
           name="$(printf '%s' "$name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           name="$(urldecode_text "$name")"
         fi
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         if is_helper_subscription_entry "$url" "$name"; then
           continue
         fi
@@ -765,7 +777,33 @@ parse_subscription() {
 
   tmp_dedup="$(mktemp)"
   jq -s '
+    def transport_rank:
+      if .transport == "tcp" then 50
+      elif .transport == "grpc" then 40
+      elif .transport == "hysteria" then 35
+      elif .transport == "ws" then 20
+      elif .transport == "httpupgrade" then 10
+      elif .transport == "xhttp" then 0
+      else 5 end;
+    def security_rank:
+      if .security == "reality" then 6
+      elif .security == "tls" then 4
+      elif .security == "none" or .security == "plain" then 0
+      else 1 end;
+    def unsupported_rank:
+      if .unsupported == true then -1000 else 0 end;
+    def server_score:
+      unsupported_rank + transport_rank + security_rank;
+
     unique_by(.url)
+    | to_entries
+    | map(.value + {
+        __index: .key,
+        __score: (.value | server_score)
+      })
+    | group_by(.name)
+    | map(sort_by([.__score, -.__index]) | last)
+    | sort_by(.__index)
     | to_entries
     | map(
         .value + {
@@ -773,6 +811,7 @@ parse_subscription() {
           tag: ("main-" + ((.key + 1) | tostring) + "-out")
         }
       )
+    | map(del(.__index, .__score))
     | .[]
   ' "$tmp_list" > "$tmp_dedup"
   mv "$tmp_dedup" "$tmp_list"
