@@ -1,5 +1,7 @@
 # Obhodiq
 
+> VPN subscription parser and manager for Podkop on OpenWrt
+
 [Русский](README.md) | [English](README.en.md)
 
 Obhodiq — это дополнение для [Podkop](https://github.com/itdoginfo/podkop) на OpenWrt. Оно нужно для работы с VPN-подписками: Obhodiq забирает ссылку подписки, разбирает её, собирает из неё список серверов и передаёт результат в Podkop, а Podkop уже занимается маршрутизацией, `URLTest`, ручным выбором и проверкой задержки.
