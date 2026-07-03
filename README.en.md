@@ -11,14 +11,25 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 > [!IMPORTANT]
 > Obhodiq does **not** replace Podkop. It works **only together with** the original Podkop and requires Podkop to be installed first.
 
+> [!IMPORTANT]
+> Obhodiq is **not a standalone VPN client** and **not a VPN service**. It does not provide servers, does not establish tunnels, does not route traffic by itself, and does not provide access to any resources without an already installed Podkop.
+>
+> Technically, Obhodiq does one thing: **it processes a subscription link and prepares configuration data for Podkop**. Actual connection handling, route selection, `URLTest`, transport behavior, and traffic processing are performed by Podkop and its dependencies.
+
 > [!WARNING]
 > Obhodiq is currently in **beta**. It is already usable, but different providers, subscription styles, and individual servers may behave differently.
 
 > [!NOTE]
-> Obhodiq itself is **not a VPN client, does not ship its own tunnel/proxy core, and does not perform traffic routing on its own**. It is a parser and integration layer on top of Podkop: it downloads subscription data, parses it, and prepares it for Podkop. Actual connection handling, `URLTest`, routing, and transport behavior are handled by Podkop and its dependencies.
-
-> [!CAUTION]
-> This README is a technical description of the project and **is not legal advice**. If legal or regulatory compliance matters in your jurisdiction, verify that separately.
+> The project is intended for **technical subscription processing and Podkop configuration management on OpenWrt**.
+>
+> Obhodiq itself:
+> - **does not include its own VPN/proxy engine**
+> - **does not establish tunnels**
+> - **does not route traffic on its own**
+> - **does not act as a VPN or proxy provider**
+> - **does not provide access to any resources by itself**
+>
+> Everything related to actual connections and traffic forwarding is handled by Podkop and its dependencies.
 
 ## What Obhodiq does
 
@@ -28,6 +39,7 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 - keeps `URLTest` available for automatic best-server selection
 - allows manual server selection
 - allows per-server enable/disable
+- imports `WS` servers **disabled by default**, while still allowing them to be enabled manually
 - shows subscription info, active server, and ping returned by Podkop
 - supports manual and scheduled subscription refresh
 
@@ -64,6 +76,9 @@ Link families the parser can currently recognize and parse:
 - `hysteria2://`
 
 ## What this means in practice
+
+> [!IMPORTANT]
+> `WS` servers are currently **imported disabled by default**. In our testing they were often unstable, but Podkop / sing-box maintainers indicate that `WS` may work in some cases, so such servers can still be enabled manually and tested separately.
 
 It is important to separate two things:
 

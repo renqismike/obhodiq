@@ -2,6 +2,29 @@
 
 ## English
 
+### Obhodiq 0.1.1
+
+This release focuses on stabilizing package installation, subscription refresh behavior, server switching, and cleaner Podkop integration.
+
+Main changes in this release:
+
+- verified clean install and clean reinstall on OpenWrt `24.10.6` (`opkg`) and OpenWrt `25.12.5` (`apk`)
+- verified clean removal of Obhodiq without removing or breaking Podkop
+- refreshed package contents so backend, CGI, init script, CLI, LuCI page and runtime helpers are included in release packages
+- fixed cases where old subscription data could survive after a failed update or overlapping refresh
+- fixed manual server switching so repeated switching between different servers is applied correctly
+- fixed auto-update behavior so disabling Obhodiq also stops its cron-based refresh
+- improved subscription import flow and provider-wrapper handling
+- kept partial `HApp 1.0` emulation for some wrapped subscription endpoints
+- `WS` servers are now imported disabled by default, but can still be enabled manually
+- updated install/uninstall scripts and project documentation
+
+What to expect:
+
+- Obhodiq can parse many subscription formats, but this does not guarantee that every provider-specific endpoint will work
+- Podkop / sing-box still decide whether a specific server can actually be applied and pinged
+- if a subscription does not work, users should report it with a sanitized sample when possible
+
 Public release assets:
 
 - `obhodiq_<version>_all.ipk`
@@ -40,11 +63,12 @@ Subscription compatibility notes:
 - `WS` is imported disabled by default; Podkop / sing-box may still support it in some cases, so users can enable it manually
 - if a provider-specific subscription does not work, users should report it with a sanitized sample
 
-Technical/legal note:
+Technical note:
 
-- Obhodiq is a subscription parser and Podkop integration layer
-- it is not a standalone VPN client and does not perform routing by itself
-- this note is technical only and is not legal advice
+- Obhodiq is an auxiliary subscription parser and Podkop integration layer
+- it does not include its own VPN/proxy engine
+- it does not establish tunnels or route traffic by itself
+- it only prepares configuration data for an already installed Podkop
 
 Uninstall policy:
 
@@ -52,6 +76,29 @@ Uninstall policy:
 - uninstall must not remove Podkop itself
 
 ## Русский
+
+### Obhodiq 0.1.1
+
+Этот релиз в первую очередь посвящён стабилизации установки пакетов, обновления подписок, переключения серверов и более чистой интеграции с Podkop.
+
+Основные изменения в этом релизе:
+
+- подтверждена чистая установка и чистая переустановка на OpenWrt `24.10.6` (`opkg`) и OpenWrt `25.12.5` (`apk`)
+- подтверждено чистое удаление Obhodiq без удаления и поломки Podkop
+- обновлён состав пакетов: в релизные файлы входят backend, CGI, init-скрипт, CLI, LuCI-страница и runtime-хелперы
+- исправлены случаи, когда после неудачного обновления или пересекающихся refresh-запусков могло оставаться старое состояние подписки
+- исправлено ручное переключение серверов: повторное переключение между разными серверами теперь применяется корректно
+- исправлена логика автообновления: при выключении Obhodiq его cron-обновление тоже останавливается
+- улучшен импорт подписок и обработка провайдерских обёрток
+- сохранена частичная эмуляция `HApp 1.0` для части обёрнутых subscription-endpoint
+- `WS`-серверы теперь импортируются выключенными по умолчанию, но их можно включить вручную
+- обновлены `install/uninstall`-скрипты и документация проекта
+
+Что важно понимать:
+
+- Obhodiq умеет разбирать многие форматы подписок, но это не гарантирует работу каждой провайдерской ссылки
+- будет ли конкретный сервер реально применён и получит ли он пинг, по-прежнему решают Podkop / sing-box
+- если какая-то подписка не заработала, лучше прислать обезличенный пример через issue
 
 Публичные файлы релиза:
 
@@ -91,11 +138,12 @@ Obhodiq — это дополнение для оригинального [Podko
 - `WS` импортируется выключенным по умолчанию; при этом Podkop / sing-box в ряде случаев могут его поддерживать, поэтому пользователь может включить такой сервер вручную
 - если провайдерская подписка не заработала, лучше прислать обезличенный пример через issue
 
-Техническая/юридическая пометка:
+Техническая пометка:
 
-- Obhodiq — это парсер подписок и слой интеграции с Podkop
-- это не самостоятельный VPN-клиент и не отдельный маршрутизатор трафика
-- эта формулировка носит только технический характер и не является юридической консультацией
+- Obhodiq — это вспомогательный парсер подписок и слой интеграции с Podkop
+- он не содержит собственного VPN/proxy-движка
+- он не поднимает туннели и не маршрутизирует трафик самостоятельно
+- он только подготавливает конфигурационные данные для уже установленного Podkop
 
 Политика удаления:
 

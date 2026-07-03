@@ -4,6 +4,8 @@
 
 ### Obhodiq 0.1.1
 
+This release focuses on stabilizing package installation, subscription refresh behavior, server switching, and cleaner Podkop integration.
+
 Main changes in this release:
 
 - verified clean install and clean reinstall on OpenWrt `24.10.6` (`opkg`) and OpenWrt `25.12.5` (`apk`)
@@ -76,6 +78,8 @@ Uninstall policy:
 ## Русский
 
 ### Obhodiq 0.1.1
+
+Этот релиз в первую очередь посвящён стабилизации установки пакетов, обновления подписок, переключения серверов и более чистой интеграции с Podkop.
 
 Основные изменения в этом релизе:
 
