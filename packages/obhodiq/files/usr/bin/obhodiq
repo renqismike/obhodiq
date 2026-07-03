@@ -11,6 +11,52 @@ LIB_DIR="/usr/lib/obhodiq"
 
 cmd="${1:-help}"
 
+with_lock_wait() {
+  lock_dir="$1"
+  max_wait="${2:-90}"
+  shift 2
+
+  mkdir -p /var/run/obhodiq
+  waited=0
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    if [ "$waited" -ge "$max_wait" ]; then
+      log_msg "another obhodiq command is already running"
+      exit 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  trap 'rmdir "$lock_dir" >/dev/null 2>&1 || true' EXIT INT TERM
+  "$@"
+}
+
+with_lock_skip_if_busy() {
+  lock_dir="$1"
+  shift
+
+  mkdir -p /var/run/obhodiq
+  if ! mkdir "$lock_dir" 2>/dev/null; then
+    log_msg "latency refresh already running"
+    exit 0
+  fi
+
+  trap 'rmdir "$lock_dir" >/dev/null 2>&1 || true' EXIT INT TERM
+  "$@"
+}
+
+run_refresh() {
+  fetch_subscription && parse_subscription
+}
+
+run_refresh_apply() {
+  fetch_subscription && parse_subscription && apply_podkop_config
+}
+
+run_select_best_apply() {
+  select_best_server && apply_podkop_config
+}
+
 case "$cmd" in
   fetch)
     fetch_subscription
@@ -19,20 +65,19 @@ case "$cmd" in
     parse_subscription
     ;;
   refresh)
-    fetch_subscription && parse_subscription
+    with_lock_wait /var/run/obhodiq/command.lock 90 run_refresh
     ;;
   refresh-apply)
-    fetch_subscription && parse_subscription && apply_podkop_config
+    with_lock_wait /var/run/obhodiq/command.lock 90 run_refresh_apply
     ;;
   select-best)
-    select_best_server
+    with_lock_wait /var/run/obhodiq/command.lock 45 select_best_server
     ;;
   select-best-apply)
-    select_best_server
-    apply_podkop_config
+    with_lock_wait /var/run/obhodiq/command.lock 90 run_select_best_apply
     ;;
   refresh-latency)
-    refresh_latency_cache
+    with_lock_skip_if_busy /var/run/obhodiq/latency.lock refresh_latency_cache
     ;;
   get-url)
     get_subscription_url
@@ -66,6 +111,20 @@ case "$cmd" in
       exit 1
     }
     set_manager_enabled "$2"
+    ;;
+  set-enabled-map)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-enabled-map <json>"
+      exit 1
+    }
+    set_enabled_servers_map "$2"
+    ;;
+  set-disabled-ids)
+    [ $# -ge 2 ] || {
+      log_msg "usage: obhodiq set-disabled-ids <csv>"
+      exit 1
+    }
+    set_disabled_server_ids "$2"
     ;;
   set-lang)
     [ $# -ge 2 ] || {
@@ -154,6 +213,8 @@ Usage:
   obhodiq set-url <subscription-url>
   obhodiq set-update-schedule <never|30m|1h|3h|6h|12h|24h>
   obhodiq set-enabled <0|1>
+  obhodiq set-enabled-map <json>
+  obhodiq set-disabled-ids <csv>
   obhodiq set-lang <en|ru>
   obhodiq set-mode <auto|manual>
   obhodiq set-active <server-id>

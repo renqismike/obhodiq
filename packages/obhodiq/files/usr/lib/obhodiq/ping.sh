@@ -20,6 +20,40 @@ refresh_latency_cache() {
     ' > "$LATENCY_FILE"
   }
 
+  merge_latency_result() {
+    tag="$1"
+    delay="$2"
+    source_file="$3"
+    next_file="$(mktemp)"
+    jq --arg tag "$tag" --argjson latency "$delay" '. + {($tag): $latency}' "$source_file" > "$next_file"
+    mv "$next_file" "$source_file"
+  }
+
+  merge_batch_results() {
+    target_file="$1"
+    result_dir="$2"
+    changed=0
+
+    for result_file in "$result_dir"/*; do
+      [ -f "$result_file" ] || continue
+      tag="$(cut -f1 "$result_file" 2>/dev/null || true)"
+      delay="$(cut -f2 "$result_file" 2>/dev/null || true)"
+      [ -n "${tag:-}" ] || {
+        rm -f "$result_file"
+        continue
+      }
+      [ -n "${delay:-}" ] || {
+        rm -f "$result_file"
+        continue
+      }
+      merge_latency_result "$tag" "$delay" "$target_file"
+      rm -f "$result_file"
+      changed=1
+    done
+
+    [ "$changed" -eq 1 ] && cp "$target_file" "$LATENCY_FILE"
+  }
+
   raw_output="$(
     /usr/bin/podkop clash_api get_group_latency main-urltest-out 10000 2>/dev/null \
       || podkop clash_api get_group_latency main-urltest-out 10000 2>/dev/null \
@@ -28,25 +62,39 @@ refresh_latency_cache() {
       || true
   )"
 
+  tmp_file="$(mktemp)"
+  printf '%s\n' '{}' > "$tmp_file"
+
   if printf '%s' "$raw_output" | jq -e 'type == "object" and length > 0' >/dev/null 2>&1; then
-    save_latency_json "$raw_output"
-    return 0
+    printf '%s' "$raw_output" | jq '
+      if type == "object" then
+        with_entries(.value |= (if type == "number" then . else (try tonumber catch .) end))
+      else
+        .
+      end
+    ' > "$tmp_file"
+    cp "$tmp_file" "$LATENCY_FILE"
   fi
 
   tags="$(
     jq -r '.enabled_servers[]? | .tag // empty' "$PODKOP_FILE" 2>/dev/null || true
   )"
   [ -n "${tags:-}" ] || {
-    printf '%s\n' '{}' > "$LATENCY_FILE"
+    cp "$tmp_file" "$LATENCY_FILE"
+    rm -f "$tmp_file"
     log_msg "latency data unavailable: no enabled tags"
     return 0
   }
 
   tmp_dir="$(mktemp -d)"
   batch_count=0
-  batch_limit=6
+  batch_limit=12
 
   for tag in $tags; do
+    if jq -e --arg tag "$tag" 'has($tag)' "$tmp_file" >/dev/null 2>&1; then
+      continue
+    fi
+
     (
       response="$(podkop_exec clash_api get_proxy_latency "$tag" 10000 2>/dev/null || true)"
       delay="$(printf '%s' "$response" | jq -r '.delay // empty' 2>/dev/null || true)"
@@ -56,25 +104,12 @@ refresh_latency_cache() {
     batch_count=$((batch_count + 1))
     if [ "$batch_count" -ge "$batch_limit" ]; then
       wait
+      merge_batch_results "$tmp_file" "$tmp_dir"
       batch_count=0
     fi
   done
   wait
-
-  tmp_file="$(mktemp)"
-  printf '%s\n' '{}' > "$tmp_file"
-
-  for result_file in "$tmp_dir"/*; do
-    [ -f "$result_file" ] || continue
-    tag="$(cut -f1 "$result_file" 2>/dev/null || true)"
-    delay="$(cut -f2 "$result_file" 2>/dev/null || true)"
-    [ -n "${tag:-}" ] || continue
-    [ -n "${delay:-}" ] || continue
-    next_file="$(mktemp)"
-    jq --arg tag "$tag" --argjson latency "$delay" '. + {($tag): $latency}' "$tmp_file" > "$next_file"
-    mv "$next_file" "$tmp_file"
-  done
-
+  merge_batch_results "$tmp_file" "$tmp_dir"
   mv "$tmp_file" "$LATENCY_FILE"
   rm -rf "$tmp_dir"
 }

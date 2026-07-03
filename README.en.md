@@ -14,6 +14,12 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 > [!WARNING]
 > Obhodiq is currently in **beta**. It is already usable, but different providers, subscription styles, and individual servers may behave differently.
 
+> [!NOTE]
+> Obhodiq itself is **not a VPN client, does not ship its own tunnel/proxy core, and does not perform traffic routing on its own**. It is a parser and integration layer on top of Podkop: it downloads subscription data, parses it, and prepares it for Podkop. Actual connection handling, `URLTest`, routing, and transport behavior are handled by Podkop and its dependencies.
+
+> [!CAUTION]
+> This README is a technical description of the project and **is not legal advice**. If legal or regulatory compliance matters in your jurisdiction, verify that separately.
+
 ## What Obhodiq does
 
 - accepts VPN subscription links
@@ -42,6 +48,8 @@ The parser currently handles:
 - base64-wrapped subscriptions
 - many JSON-based subscription payloads
 - HAPP-style wrappers such as `happ://add/https://...`
+
+For part of those provider-side wrappers, Obhodiq also uses `HApp 1.0` client emulation so that some subscription endpoints return the expected payload at all.
 
 Link families the parser can currently recognize and parse:
 
@@ -73,6 +81,7 @@ Additional notes:
 - `happ://add/https://...` is treated as a wrapper format, not as a proxy type
 - encrypted `happ://crypt4/...` subscriptions are not claimed as fully supported
 - `WS`, `GRPC`, `Hysteria`, and similar formats may parse correctly, but actual behavior still depends on Podkop, `sing-box`, and the provider
+- `WS` is currently imported **disabled by default** because in our testing it was often unstable; however, Podkop / sing-box documentation and maintainer comments indicate that `WS` may work, so such servers can still be enabled manually and tested case by case
 - Podkop uses `sing-box`, so support for `VLESS`, `WS`, `Reality`, and other transport-dependent formats depends on `sing-box` capabilities
 - for more complex cases, Podkop also supports manual configuration through `Outbound Config`
 
@@ -115,13 +124,13 @@ If you prefer manual installation, use the package files from the release assets
 For OpenWrt with `opkg`:
 
 ```sh
-opkg install obhodiq_0.1.0-r2_all.ipk luci-app-obhodiq_0.1.0-r2_all.ipk
+opkg install obhodiq_0.1.1-r1_all.ipk luci-app-obhodiq_0.1.1-r1_all.ipk
 ```
 
 For OpenWrt with `apk`:
 
 ```sh
-apk add --allow-untrusted obhodiq-0.1.0-r2.apk luci-app-obhodiq-0.1.0-r2.apk
+apk add --allow-untrusted obhodiq-0.1.1-r1.apk luci-app-obhodiq-0.1.1-r1.apk
 ```
 
 ## Remove
@@ -170,6 +179,14 @@ Server list:
 - if a server has ping, it means Podkop returned latency for it
 - if a server has no ping, it does not always mean the link is broken, but it does mean that in Podkop this server did not return usable latency
 - a link family being listed in this README means parser support in Obhodiq, not an unconditional guarantee that every server of that family will work with every provider
+- parser support in Obhodiq **does not guarantee** that every provider-specific subscription endpoint will parse successfully
+
+## If your subscription does not work
+
+- not every provider-side subscription format is guaranteed to match the formats already tested in Obhodiq
+- if your link does not parse or behaves unexpectedly, please open an issue in the repository
+- if possible, include a sanitized sample or a description of the response format without personal tokens, UUIDs, domains, or private URLs
+- if it is a new valid format, I will try to review it and add support where possible
 
 ## Testing status
 
@@ -181,3 +198,9 @@ Tested during development on:
 - OpenWrt `25.12.5` with `apk`
 - Podkop `0.7.19-r1`
 - Podkop `0.7.20-r1`
+
+The latest checks also confirmed:
+
+- clean `apk` install after full Obhodiq removal
+- clean `ipk` install on a real router after full Obhodiq removal
+- Obhodiq removal without removing or breaking Podkop itself

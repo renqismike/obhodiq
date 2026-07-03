@@ -39,14 +39,18 @@ var I18N = {
     selected_by_podkop: 'Currently selected by Podkop',
     disabled: 'Disabled',
     unsupported: 'Unsupported by Podkop',
+    maybe_unsupported: 'May be unsupported',
     no_ping: 'Podkop did not return ping',
     unsupported_short: 'unsupported',
+    maybe_unsupported_short: 'may be unsupported',
     cannot_read_status: 'Could not read status: ',
     manager_not_interfering: 'Manager is disabled and does not interfere with Podkop',
     saving: 'Saving...',
     url_saved: 'URL saved',
+    url_saved_refresh_needed: 'URL saved. Refresh subscription to load new data',
     refreshing_sub: 'Refreshing subscription...',
     sub_updated: 'Subscription updated',
+    subscription_parse_failed: 'Subscription update is not complete yet or no supported servers were found',
     saving_schedule: 'Saving update schedule...',
     schedule_saved: 'Update schedule saved',
     enabling_manager: 'Enabling manager...',
@@ -107,14 +111,18 @@ var I18N = {
     selected_by_podkop: 'Сейчас выбран Podkop',
     disabled: 'Отключён',
     unsupported: 'Не поддерживается Podkop',
+    maybe_unsupported: 'Может не поддерживаться',
     no_ping: 'Podkop не дал пинг',
     unsupported_short: 'не поддерж.',
+    maybe_unsupported_short: 'может не подд.',
     cannot_read_status: 'Не удалось прочитать статус: ',
     manager_not_interfering: 'Менеджер отключён и не вмешивается в Podkop',
     saving: 'Сохраняем...',
     url_saved: 'Ссылка сохранена',
+    url_saved_refresh_needed: 'Ссылка сохранена. Обновите подписку, чтобы загрузить новые данные',
     refreshing_sub: 'Обновляем подписку...',
     sub_updated: 'Подписка обновлена',
+    subscription_parse_failed: 'Подписка ещё не догрузилась или не найдено поддерживаемых серверов',
     saving_schedule: 'Сохраняем расписание обновления...',
     schedule_saved: 'Расписание обновления сохранено',
     enabling_manager: 'Включаем менеджер...',
@@ -369,6 +377,9 @@ return view.extend({
       statusRequestSeq: 0,
       statusAppliedSeq: 0,
       statusSuspend: false,
+      subscriptionRefreshLoading: false,
+      pendingSavedUrl: '',
+      subscriptionRefreshPreviousUpdatedAt: 0,
       latencyRefreshActive: false,
       latencyRefreshStartedAt: 0,
       latencyLastCount: -1,
@@ -476,9 +487,23 @@ return view.extend({
       if (!state.data) {
         return;
       }
+      state.subscriptionRefreshLoading = true;
       state.data = Object.assign({}, state.data, {
         active_server_id: '',
         count: 0,
+        supported_count: 0,
+        unsupported_count: 0,
+        latency_count: 0,
+        meta: {
+          profile_title: '',
+          upload: 0,
+          download: 0,
+          total: 0,
+          expire: 0,
+          remaining: 0,
+          updated_at: 0
+        },
+        subscription_error: {},
         servers: [],
         live: {
           main_out_now: '',
@@ -491,6 +516,53 @@ return view.extend({
       state.activeId = '';
       renderSummary(state.data);
       renderTable(state.data);
+    }
+
+    function clearSavedSubscriptionView(nextUrl) {
+      state.subscriptionRefreshLoading = false;
+      state.data = Object.assign({}, state.data || {}, {
+        subscription_url: nextUrl || '',
+        active_server_id: '',
+        configured_active_server_id: '',
+        count: 0,
+        supported_count: 0,
+        unsupported_count: 0,
+        latency_count: 0,
+        selection_mode: 'auto',
+        configured_selection_mode: 'auto',
+        subscription_error: {},
+        selected: {},
+        meta: {
+          profile_title: '',
+          upload: 0,
+          download: 0,
+          total: 0,
+          expire: 0,
+          remaining: 0,
+          updated_at: 0,
+          notices: [],
+          announce: ''
+        },
+        servers: [],
+        live: {
+          main_out_now: '',
+          urltest_now: '',
+          resolved_active_id: '',
+          proxies: {}
+        },
+        exported: {},
+        podkop: {},
+        podkop_apply: {}
+      });
+      state.pendingEnabled = {};
+      state.activeId = '';
+      state.selectionMode = 'auto';
+      renderSummary(state.data);
+      renderTable(state.data);
+    }
+
+    function normalizeUrl(value) {
+      return ((value || '') + '').trim();
     }
 
     function scheduleApplySelection() {
@@ -539,7 +611,14 @@ return view.extend({
       if (!state.data || !state.data.live) {
         return null;
       }
-      return findServerById(state.data.live.resolved_active_id);
+      var server = findServerById(state.data.live.resolved_active_id);
+      if (!server) {
+        return null;
+      }
+      if (server.excluded || server.unsupported || server.runtime_tag == null) {
+        return null;
+      }
+      return server;
     }
 
     function getActiveCardText() {
@@ -551,7 +630,7 @@ return view.extend({
         return '-';
       }
       if (!liveServer) {
-        return state.data && state.data.live && state.data.live.main_out_now === 'main-urltest-out' ? t('auto') : '-';
+        return '-';
       }
       return (state.data && state.data.live && state.data.live.main_out_now === 'main-urltest-out')
         ? t('auto_current', { name: liveServer.name })
@@ -603,15 +682,17 @@ return view.extend({
       subscriptionMeta.innerHTML = '';
       subscriptionMeta.appendChild(el('div', {
         style: 'font-size:16px;font-weight:700;color:#f4f7ff;min-height:26px;display:flex;align-items:center;'
-      }, [text(meta.profile_title || '-', '-')]));
+      }, [state.subscriptionRefreshLoading ? t('loading_data') : text(meta.profile_title || '-', '-')]));
       subscriptionMeta.appendChild(el('div', {
         style: 'min-height:18px;font-size:12px;color:#8fa2c0;display:flex;align-items:center;'
       }, [
-        t('supported_line', {
-          supported: String(data.supported_count || 0),
-          latency: String(data.latency_count || 0),
-          unsupported: String(data.unsupported_count || 0)
-        })
+        state.subscriptionRefreshLoading
+          ? t('loading_data')
+          : t('supported_line', {
+              supported: String(data.supported_count || 0),
+              latency: String(data.latency_count || 0),
+              unsupported: String(data.unsupported_count || 0)
+            })
       ]));
       if (summaryMessages.length) {
         subscriptionMeta.appendChild(el('div', {
@@ -698,6 +779,16 @@ return view.extend({
       var liveServer = getResolvedServer();
       tableBody.innerHTML = '';
 
+      if (state.subscriptionRefreshLoading) {
+        var loadingRow = el('tr', {});
+        loadingRow.appendChild(el('td', {
+          colspan: '5',
+          style: 'padding:20px 14px;color:#9fb0cb;font-size:14px;'
+        }, [t('loading_data')]));
+        tableBody.appendChild(loadingRow);
+        return;
+      }
+
       var autoRow = el('tr', {
         style: state.selectionMode === 'auto' ? 'background:rgba(227,173,63,.10);' : ''
       });
@@ -727,6 +818,7 @@ return view.extend({
         var isUnsupported = !!srv.unsupported;
         var isManualSelected = state.selectionMode === 'manual' && state.activeId === srv.id;
         var isLiveSelected = liveServer && liveServer.id === srv.id;
+        var isMaybeUnsupported = !!srv.maybe_unsupported;
         var subtitle = [];
 
         if (isManualSelected) {
@@ -740,6 +832,8 @@ return view.extend({
         }
         if (isUnsupported) {
           subtitle.push(srv.unsupported_reason || t('unsupported'));
+        } else if (!enabled && isMaybeUnsupported) {
+          subtitle.push(srv.maybe_unsupported_reason || t('maybe_unsupported'));
         } else if (enabled && srv.latency == null) {
           subtitle.push(t('no_ping'));
         }
@@ -785,8 +879,8 @@ return view.extend({
         }, [text(srv.type_label || srv.scheme)]));
 
         tr.appendChild(el('td', {
-          style: 'padding:14px 10px;font-weight:700;color:' + (isUnsupported ? '#ff9191' : (srv.latency != null ? '#7effc2' : '#90a2bf')) + ';width:120px;'
-        }, [isUnsupported ? t('unsupported_short') : formatPing(srv.latency)]));
+          style: 'padding:14px 10px;font-weight:700;color:' + (isUnsupported ? '#ff9191' : ((!enabled && isMaybeUnsupported) ? '#f2c56a' : (srv.latency != null ? '#7effc2' : '#90a2bf'))) + ';width:120px;'
+        }, [isUnsupported ? t('unsupported_short') : ((!enabled && isMaybeUnsupported) ? t('maybe_unsupported_short') : formatPing(srv.latency))]));
 
         tableBody.appendChild(tr);
       });
@@ -796,36 +890,80 @@ return view.extend({
       var requestSeq = ++state.statusRequestSeq;
       return jsonRequest(commandUrl('&cmd=status'))
         .then(function (data) {
+          var refreshReady = true;
+          var pendingUrl = normalizeUrl(state.pendingSavedUrl);
+          var statusUrl = normalizeUrl(data && data.subscription_url);
+          var parsedUrl = normalizeUrl(data && data.parsed_source_url);
+          var matchesPendingUrl = !pendingUrl || statusUrl === pendingUrl || parsedUrl === pendingUrl;
+
           if (requestSeq < state.statusAppliedSeq) {
             return;
           }
           state.statusAppliedSeq = requestSeq;
           setUiLang(data.lang || 'en');
           updateStaticTexts();
-          state.data = data;
-          state.selectionMode = data.configured_selection_mode || data.selection_mode || 'auto';
+          if (state.subscriptionRefreshLoading) {
+            var currentUpdatedAt = getStatusUpdatedAt(data);
+            var errorUpdatedAt = getSubscriptionErrorUpdatedAt(data);
+            var hasFreshError = !!(
+              data &&
+              data.subscription_error &&
+              data.subscription_error.message &&
+              errorUpdatedAt >= state.subscriptionRefreshPreviousUpdatedAt
+            );
+            refreshReady = hasFreshError || (
+              currentUpdatedAt >= state.subscriptionRefreshPreviousUpdatedAt &&
+              hasMatchingParsedSource(data, '') &&
+              isApplyReady(data, state.subscriptionRefreshPreviousUpdatedAt)
+            );
+          }
+
+          if (!state.subscriptionRefreshLoading && pendingUrl && matchesPendingUrl) {
+            state.pendingSavedUrl = '';
+            pendingUrl = '';
+          }
+
+          if (state.subscriptionRefreshLoading && !refreshReady && !matchesPendingUrl) {
+            subUrlInput.value = pendingUrl || subUrlInput.value || '';
+            setInfo(t('refreshing_sub'), false);
+            return;
+          }
+
+          state.subscriptionRefreshLoading = state.subscriptionRefreshLoading && !refreshReady;
+          state.data = normalizeDataForDisplay(data);
+          if (matchesPendingUrl) {
+            state.pendingSavedUrl = '';
+          } else if (pendingUrl) {
+            state.data.subscription_url = pendingUrl;
+          }
+          state.selectionMode = state.data.configured_selection_mode || state.data.selection_mode || 'auto';
+          var currentPendingEnabled = Object.assign({}, state.pendingEnabled);
           state.pendingEnabled = {};
-          (data.servers || []).forEach(function (srv) {
-          state.pendingEnabled[srv.id] = !srv.excluded && !srv.unsupported;
-        });
-          state.activeId = data.configured_active_server_id || data.active_server_id || ((data.servers && data.servers[0] && data.servers[0].id) || '');
-          state.enabled = data.enabled !== false;
-          state.updateSchedule = data.update_schedule || 'never';
-          subUrlInput.value = data.subscription_url || '';
+          (state.data.servers || []).forEach(function (srv) {
+            if ((state.applyInFlight || state.applyTimer) && Object.prototype.hasOwnProperty.call(currentPendingEnabled, srv.id)) {
+              state.pendingEnabled[srv.id] = currentPendingEnabled[srv.id];
+            } else {
+              state.pendingEnabled[srv.id] = !srv.excluded && !srv.unsupported;
+            }
+          });
+          state.activeId = state.data.configured_active_server_id || state.data.active_server_id || ((state.data.servers && state.data.servers[0] && state.data.servers[0].id) || '');
+          state.enabled = state.data.enabled !== false;
+          state.updateSchedule = state.data.update_schedule || 'never';
+          subUrlInput.value = state.data.subscription_url || '';
           scheduleSelect.value = state.updateSchedule;
           updateEnabledButton();
-          renderSummary(data);
-          renderTable(data);
-          if (data.subscription_error && data.subscription_error.message) {
-            setInfo(data.subscription_error.message, true);
+          if (!refreshReady) {
+            setInfo(t('refreshing_sub'), false);
+            return;
+          }
+          renderSummary(state.data);
+          renderTable(state.data);
+          if (state.data.subscription_error && state.data.subscription_error.message && Number(state.data.count || 0) <= 0) {
+            setInfo(state.data.subscription_error.message, true);
           } else if (state.latencyRefreshActive) {
-            setInfo(formatLatencyProgressMessage(data, false), false);
-          } else if (isPassiveLatencyTrackingActive(data)) {
-            setInfo(formatLatencyProgressMessage(data, false), false);
-          } else if (data.meta && Array.isArray(data.meta.notices) && data.meta.notices.length) {
-            setInfo(data.meta.notices[0], false);
-          } else if (data.meta && data.meta.announce) {
-            setInfo(data.meta.announce, false);
+            setInfo(formatLatencyProgressMessage(state.data, false), false);
+          } else if (isPassiveLatencyTrackingActive(state.data)) {
+            setInfo(formatLatencyProgressMessage(state.data, false), false);
           } else {
             setInfo(state.enabled ? '' : t('manager_not_interfering'), false);
           }
@@ -869,6 +1007,52 @@ return view.extend({
         : t('ping_progress', { current: current, total: total });
     }
 
+    function startLatencyProgressTracking() {
+      state.latencyRefreshActive = true;
+      state.latencyRefreshStartedAt = Date.now();
+      state.latencyLastCount = -1;
+      state.latencyStableRounds = 0;
+
+      return refresh()
+        .then(function () {
+          if (!state.latencyRefreshActive) {
+            return;
+          }
+
+          var total = getExpectedLatencyCount(state.data);
+          var current = getCurrentLatencyCount(state.data);
+          state.latencyLastCount = current;
+
+          if (total > 0 && current >= total) {
+            stopLatencyProgress();
+            state.passiveLatencyTrackingUntil = 0;
+            setInfo(t('ping_updated'), false);
+            return;
+          }
+
+          setInfo(formatLatencyProgressMessage(state.data, false), false);
+          return pollLatencyProgress();
+        });
+    }
+
+    function queueLatencyRefresh() {
+      state.passiveLatencyTrackingUntil = Date.now() + 300000;
+      return wait(350)
+        .then(function () {
+          return requestCommand('refresh-latency-bg', {});
+        })
+        .then(function () {
+          return startLatencyProgressTracking();
+        })
+        .catch(function () {
+          return refresh().then(function () {
+            if (isPassiveLatencyTrackingActive(state.data)) {
+              setInfo(formatLatencyProgressMessage(state.data, false), false);
+            }
+          }).catch(function () {});
+        });
+    }
+
     function pollLatencyProgress() {
       if (!state.latencyRefreshActive) {
         return Promise.resolve();
@@ -885,7 +1069,7 @@ return view.extend({
 
           var current = getCurrentLatencyCount(state.data);
           var total = getExpectedLatencyCount(state.data);
-          var timedOut = (Date.now() - state.latencyRefreshStartedAt) >= 75000;
+          var timedOut = (Date.now() - state.latencyRefreshStartedAt) >= 300000;
 
           if (current > state.latencyLastCount) {
             state.latencyStableRounds = 0;
@@ -929,38 +1113,283 @@ return view.extend({
       }, 15000);
     }
 
+    function getStatusUpdatedAt(data) {
+      if (!data) {
+        return 0;
+      }
+      return Math.max(
+        0,
+        Number(data.updated_at || 0),
+        Number((data.meta && data.meta.updated_at) || 0)
+      );
+    }
+
+    function getSubscriptionErrorUpdatedAt(data) {
+      if (!data || !data.subscription_error) {
+        return 0;
+      }
+
+      return Math.max(0, Number(data.subscription_error.updated_at || 0));
+    }
+
+    function getApplyUpdatedAt(data) {
+      if (!data || !data.podkop_apply) {
+        return 0;
+      }
+
+      return Math.max(0, Number(data.podkop_apply.updated_at || 0));
+    }
+
+    function isApplyReady(data, watermark) {
+      if (!data || data.enabled === false) {
+        return true;
+      }
+
+      return getApplyUpdatedAt(data) >= watermark;
+    }
+
+    function hasMatchingParsedSource(data, requestedUrl) {
+      var currentRequested = ((requestedUrl == null ? '' : requestedUrl) + '').trim();
+      var configuredUrl = (((data && data.subscription_url) || '') + '').trim();
+      var parsedUrl = (((data && data.parsed_source_url) || '') + '').trim();
+      var targetUrl = currentRequested || configuredUrl;
+
+      if (!targetUrl) {
+        return !parsedUrl;
+      }
+
+      return !!parsedUrl && parsedUrl === targetUrl;
+    }
+
+    function normalizeDataForDisplay(data) {
+      if (!data) {
+        return data;
+      }
+
+      if (hasMatchingParsedSource(data, '')) {
+        return data;
+      }
+
+      return Object.assign({}, data, {
+        active_server_id: '',
+        configured_active_server_id: '',
+        count: 0,
+        supported_count: 0,
+        unsupported_count: 0,
+        enabled_count: 0,
+        latency_count: 0,
+        servers: [],
+        live: {
+          main_out_now: '',
+          urltest_now: '',
+          resolved_active_id: '',
+          proxies: {}
+        },
+        selected: {},
+        podkop: Object.assign({}, data.podkop || {}, { enabled_servers: [] }),
+        podkop_apply: {}
+      });
+    }
+
+    function waitForSubscriptionRefresh(previousUpdatedAt, attemptsLeft) {
+      if (attemptsLeft <= 0) {
+        return Promise.resolve(false);
+      }
+
+      return wait(2500)
+        .then(function () {
+          return refresh();
+        })
+        .then(function () {
+          var currentUpdatedAt = getStatusUpdatedAt(state.data);
+          var errorUpdatedAt = getSubscriptionErrorUpdatedAt(state.data);
+          var hasFreshError = !!(
+            state.data &&
+            state.data.subscription_error &&
+            state.data.subscription_error.message &&
+            errorUpdatedAt >= previousUpdatedAt
+          );
+          var parsedMatches = hasMatchingParsedSource(state.data, '');
+
+          if ((currentUpdatedAt >= previousUpdatedAt && parsedMatches && isApplyReady(state.data, previousUpdatedAt)) || hasFreshError) {
+            return true;
+          }
+
+          return waitForSubscriptionRefresh(previousUpdatedAt, attemptsLeft - 1);
+        })
+        .catch(function () {
+          return waitForSubscriptionRefresh(previousUpdatedAt, attemptsLeft - 1);
+        });
+    }
+
+    function isSelectionApplied(mode, activeId, data) {
+      var live = (data && data.live) || {};
+      var enabledCount = Number((data && data.enabled_count) || 0);
+
+      if (enabledCount <= 0) {
+        return true;
+      }
+
+      if (mode === 'auto') {
+        return data &&
+          data.selection_mode === 'auto' &&
+          live.main_out_now === 'main-urltest-out' &&
+          !!live.urltest_now;
+      }
+
+      return data &&
+        data.selection_mode === 'manual' &&
+        data.active_server_id === activeId &&
+        live.resolved_active_id === activeId;
+    }
+
+    function waitForSelectionApply(mode, activeId, attemptsLeft) {
+      if (attemptsLeft <= 0) {
+        return Promise.resolve(false);
+      }
+
+      return wait(2000)
+        .then(function () {
+          return refresh();
+        })
+        .then(function () {
+          if (isSelectionApplied(mode, activeId, state.data)) {
+            return true;
+          }
+
+          return waitForSelectionApply(mode, activeId, attemptsLeft - 1);
+        })
+        .catch(function () {
+          return waitForSelectionApply(mode, activeId, attemptsLeft - 1);
+        });
+    }
+
     function saveUrl() {
+      var inputUrl = (subUrlInput.value || '').trim();
+      var currentUrl = (((state.data && state.data.subscription_url) || '') + '').trim();
+      var urlChanged = !!inputUrl && inputUrl !== currentUrl;
+
       setButtonBusy(saveUrlButton, true, t('saving'));
-      return runAction('set-url', { url: subUrlInput.value || '' }, t('url_saved'))
+      return requestCommand('set-url', { url: subUrlInput.value || '' })
+        .then(function () {
+          state.pendingSavedUrl = inputUrl;
+          if (!state.data) {
+            state.data = {};
+          }
+          state.data.subscription_url = inputUrl;
+          subUrlInput.value = inputUrl;
+
+          if (urlChanged) {
+            setInfo(t('url_saved_refresh_needed'), false);
+            return;
+          }
+
+          setInfo(t('url_saved'), false);
+        })
+        .catch(function (e) {
+          setInfo(t('error') + String(e), true);
+        })
         .finally(function () {
           setButtonBusy(saveUrlButton, false);
         });
     }
 
+    function ensureCurrentUrlSaved() {
+      var inputUrl = (subUrlInput.value || '').trim();
+      var statusUrl = (((state.data && state.data.subscription_url) || '') + '').trim();
+
+      if (!inputUrl) {
+        return Promise.resolve();
+      }
+
+      if (inputUrl === statusUrl) {
+        return Promise.resolve();
+      }
+
+      return requestCommand('set-url', { url: inputUrl }).then(function () {
+        state.pendingSavedUrl = inputUrl;
+        if (!state.data) {
+          state.data = {};
+        }
+        state.data.subscription_url = inputUrl;
+        subUrlInput.value = inputUrl;
+      });
+    }
+
     function refreshSubscription() {
+      var previousUpdatedAt = getStatusUpdatedAt(state.data);
+      var refreshStartedAt = Math.floor(Date.now() / 1000);
+      var refreshWatermark = Math.max(previousUpdatedAt, refreshStartedAt);
+      var requestedUrl = (subUrlInput.value || '').trim();
+
+      stopLatencyProgress();
       state.statusSuspend = true;
       state.passiveLatencyTrackingUntil = Date.now() + 90000;
+      state.subscriptionRefreshPreviousUpdatedAt = refreshWatermark;
+      state.pendingSavedUrl = requestedUrl;
       setButtonBusy(refreshSubButton, true, t('refreshing_sub'));
       setInfo(t('refreshing_sub'), false);
-      clearSubscriptionView();
-      return requestCommand('refresh-apply', {})
+      return ensureCurrentUrlSaved()
         .then(function () {
-          return wait(1800);
+          clearSubscriptionView();
+          return requestCommand('refresh-apply-bg', {});
         })
         .then(function () {
+          return waitForSubscriptionRefresh(refreshWatermark, 20);
+        })
+        .then(function (recovered) {
+          if (!recovered) {
+            return refresh().then(function () {
+              var hasServers = !!(state.data && Number(state.data.count || 0) > 0);
+              var sameUrl = !requestedUrl || (((state.data && state.data.subscription_url) || '') + '').trim() === requestedUrl;
+              var parsedMatches = hasMatchingParsedSource(state.data, requestedUrl);
+
+              if (sameUrl && hasServers && parsedMatches) {
+                state.subscriptionRefreshLoading = false;
+                if (state.data) {
+                  renderSummary(state.data);
+                  renderTable(state.data);
+                }
+                setInfo(t('sub_updated'), false);
+                queueLatencyRefresh().catch(function () {});
+                return;
+              }
+
+              throw new Error(t('subscription_parse_failed'));
+            });
+          }
+
           return refresh();
         })
         .then(function () {
-          if (!state.data || !state.data.subscription_error || !state.data.subscription_error.message) {
-            if (isPassiveLatencyTrackingActive(state.data)) {
-              setInfo(formatLatencyProgressMessage(state.data, false), false);
-            } else {
-              state.passiveLatencyTrackingUntil = 0;
-              setInfo(t('sub_updated'), false);
-            }
+          state.subscriptionRefreshLoading = false;
+          if (requestedUrl) {
+            state.pendingSavedUrl = '';
           }
+          if (state.data) {
+            renderSummary(state.data);
+            renderTable(state.data);
+          }
+          if (
+            state.data &&
+            state.data.subscription_error &&
+            state.data.subscription_error.message &&
+            Number(state.data.count || 0) <= 0
+          ) {
+            throw new Error(state.data.subscription_error.message);
+          }
+          setInfo(t('sub_updated'), false);
+          queueLatencyRefresh().catch(function () {});
         })
         .catch(function (e) {
+          state.subscriptionRefreshLoading = false;
+          if (requestedUrl && hasMatchingParsedSource(state.data, requestedUrl)) {
+            state.pendingSavedUrl = '';
+          }
+          if (state.data) {
+            renderSummary(state.data);
+            renderTable(state.data);
+          }
           setInfo(t('error') + String(e), true);
         })
         .finally(function () {
@@ -1015,40 +1444,10 @@ return view.extend({
 
     function refreshLatency() {
       stopLatencyProgress();
-      state.passiveLatencyTrackingUntil = Date.now() + 90000;
       setButtonBusy(refreshPingButton, true, '↻');
       setInfo(t('refreshing_ping'), false);
       clearLatenciesView();
-      return wait(350)
-        .then(function () {
-          return requestCommand('refresh-latency', {});
-        })
-        .then(function () {
-          state.latencyRefreshActive = true;
-          state.latencyRefreshStartedAt = Date.now();
-          state.latencyLastCount = -1;
-          state.latencyStableRounds = 0;
-          return refresh();
-        })
-        .then(function () {
-          if (!state.latencyRefreshActive) {
-            return;
-          }
-
-          var total = getExpectedLatencyCount(state.data);
-          var current = getCurrentLatencyCount(state.data);
-          state.latencyLastCount = current;
-
-          if (total > 0 && current >= total) {
-            stopLatencyProgress();
-            state.passiveLatencyTrackingUntil = 0;
-            setInfo(t('ping_updated'), false);
-            return;
-          }
-
-          setInfo(formatLatencyProgressMessage(state.data, false), false);
-          return pollLatencyProgress();
-        })
+      return queueLatencyRefresh()
         .catch(function (e) {
           stopLatencyProgress();
           setInfo(t('error') + String(e), true);
@@ -1087,9 +1486,12 @@ return view.extend({
       });
 
       if (changed.length) {
-        chain = Promise.all(changed.map(function (change) {
-          return requestCommand(change.shouldEnable ? 'include' : 'exclude', { id: change.id });
-        }));
+        var disabledIds = Object.keys(snapshotEnabled).filter(function (id) {
+          return snapshotEnabled[id] === false;
+        });
+        chain = requestCommand('set-disabled-ids', {
+          disabled_ids: disabledIds.join(',')
+        });
       }
 
       chain = chain.then(function () {
@@ -1105,8 +1507,6 @@ return view.extend({
       if (applyAfter) {
         chain = chain.then(function () {
           return requestCommand('apply-podkop', {});
-        }).then(function () {
-          return wait(1600);
         });
       }
 
@@ -1114,8 +1514,13 @@ return view.extend({
         if (revisionAtStart != null && revisionAtStart !== state.applyRevision) {
           return;
         }
-        return refresh().then(function () {
+        return waitForSelectionApply(snapshotSelectionMode, snapshotActiveId, 12).then(function () {
+          return refresh();
+        }).then(function () {
           setInfo(applyAfter ? t('selection_applied') : t('selection_saved'), false);
+          if (applyAfter) {
+            queueLatencyRefresh().catch(function () {});
+          }
         });
       }).catch(function (e) {
         setInfo(t('error') + String(e), true);

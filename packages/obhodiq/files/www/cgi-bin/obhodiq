@@ -15,6 +15,41 @@ json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\r/\\r/g; s/\n/\\n/g'
 }
 
+pid_is_running() {
+  pid="$1"
+  [ -n "${pid:-}" ] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+stop_pidfile_job() {
+  pid_file="$1"
+  lock_dir="${2:-}"
+
+  [ -f "$pid_file" ] || return 0
+  pid="$(cat "$pid_file" 2>/dev/null || true)"
+  if pid_is_running "$pid"; then
+    kill "$pid" 2>/dev/null || true
+    sleep 1
+    pid_is_running "$pid" && kill -9 "$pid" 2>/dev/null || true
+  fi
+
+  rm -f "$pid_file"
+  [ -n "${lock_dir:-}" ] && rmdir "$lock_dir" >/dev/null 2>&1 || true
+}
+
+start_single_bg_job() {
+  pid_file="$1"
+  log_file="$2"
+  lock_dir="${3:-}"
+  shift 3
+
+  mkdir -p /var/run/obhodiq
+  stop_pidfile_job "$pid_file" "$lock_dir"
+  "$@" >"$log_file" 2>&1 &
+  bg_pid="$!"
+  printf '%s\n' "$bg_pid" > "$pid_file"
+}
+
 QUERY="${QUERY_STRING:-}"
 [ -n "$QUERY" ] || case "${REQUEST_URI:-}" in
   *\?*) QUERY="${REQUEST_URI#*\?}" ;;
@@ -43,6 +78,8 @@ group="$(get_query_value group)"
 url="$(get_query_value url)"
 schedule="$(get_query_value schedule)"
 enabled="$(get_query_value enabled)"
+enabled_map="$(get_query_value enabled_map)"
+disabled_ids="$(get_query_value disabled_ids)"
 lang="$(get_query_value lang)"
 
 id="$(urldecode "$id")"
@@ -51,6 +88,8 @@ group="$(urldecode "$group")"
 url="$(urldecode "$url")"
 schedule="$(urldecode "$schedule")"
 enabled="$(urldecode "$enabled")"
+enabled_map="$(urldecode "$enabled_map")"
+disabled_ids="$(urldecode "$disabled_ids")"
 lang="$(urldecode "$lang")"
 
 echo "Content-Type: application/json"
@@ -60,6 +99,22 @@ case "$cmd" in
   fetch|parse|refresh|refresh-apply|select-best|select-best-apply|refresh-latency|get-url|get-update-schedule|get-enabled|get-lang|export-active|sync-podkop|write-podkop-apply|apply-podkop|status|list-servers|list-groups)
     /usr/bin/obhodiq "$cmd"
     ;;
+  refresh-apply-bg)
+    start_single_bg_job \
+      /var/run/obhodiq/refresh-apply-bg.pid \
+      /tmp/obhodiq-subscription-refresh.log \
+      /var/run/obhodiq/command.lock \
+      /usr/bin/obhodiq refresh-apply
+    printf '{"ok":true,"background":true}\n'
+    ;;
+  refresh-latency-bg)
+    start_single_bg_job \
+      /var/run/obhodiq/refresh-latency-bg.pid \
+      /tmp/obhodiq-ping-refresh.log \
+      /var/run/obhodiq/latency.lock \
+      /usr/bin/obhodiq refresh-latency
+    printf '{"ok":true,"background":true}\n'
+    ;;
   set-url)
     /usr/bin/obhodiq set-url "$url"
     ;;
@@ -68,6 +123,12 @@ case "$cmd" in
     ;;
   set-enabled)
     /usr/bin/obhodiq set-enabled "$enabled"
+    ;;
+  set-enabled-map)
+    /usr/bin/obhodiq set-enabled-map "$enabled_map"
+    ;;
+  set-disabled-ids)
+    /usr/bin/obhodiq set-disabled-ids "$disabled_ids"
     ;;
   set-lang)
     /usr/bin/obhodiq set-lang "$lang"

@@ -27,6 +27,7 @@ set_manager_enabled() {
   esac
 
   config_set main enabled "$enabled_flag"
+  sync_update_schedule
   log_msg "manager enabled set: $enabled_flag"
 }
 
@@ -125,18 +126,88 @@ set_server_excluded() {
   ' "$PARSED_FILE" > "$tmp_file"
   mv "$tmp_file" "$PARSED_FILE"
 
-  if [ "$excluded_flag" = "true" ]; then
-    jq --arg id "$server_id" '
-      if index($id) then . else . + [$id] end
-    ' "$EXCLUDED_FILE" > "$tmp_file"
-  else
-    jq --arg id "$server_id" '
-      map(select(. != $id))
-    ' "$EXCLUDED_FILE" > "$tmp_file"
-  fi
+  jq '
+    [
+      .servers[]?
+      | select(.excluded == true)
+      | .url
+      | select(type == "string" and length > 0)
+    ]
+    | unique
+  ' "$PARSED_FILE" > "$tmp_file"
   mv "$tmp_file" "$EXCLUDED_FILE"
 
   log_msg "excluded updated: $server_id -> $excluded_flag"
+}
+
+set_enabled_servers_map() {
+  require_jq || return 1
+  init_storage_files
+
+  enabled_map_json="$1"
+  printf '%s' "${enabled_map_json:-}" | jq -e . >/dev/null 2>&1 || {
+    log_msg "invalid enabled map json"
+    return 1
+  }
+
+  tmp_file="$(mktemp)"
+  jq --argjson enabled_map "$enabled_map_json" '
+    .servers |= map(
+      . as $server
+      | if ($server.unsupported // false) == true then
+        .excluded = true
+      else
+        .excluded = (if ($enabled_map[$server.id] // true) then false else true end)
+      end
+    )
+  ' "$PARSED_FILE" > "$tmp_file"
+  mv "$tmp_file" "$PARSED_FILE"
+
+  jq '
+    [
+      .servers[]?
+      | select(.excluded == true)
+      | .url
+      | select(type == "string" and length > 0)
+    ]
+    | unique
+  ' "$PARSED_FILE" > "$tmp_file"
+  mv "$tmp_file" "$EXCLUDED_FILE"
+
+  log_msg "enabled map updated"
+}
+
+set_disabled_server_ids() {
+  require_jq || return 1
+  init_storage_files
+
+  disabled_ids_csv="$1"
+  tmp_file="$(mktemp)"
+  jq --arg disabled_ids_csv "$disabled_ids_csv" '
+    ($disabled_ids_csv | split(",") | map(select(length > 0))) as $disabled_ids
+    | .servers |= map(
+        . as $server
+        | if ($server.unsupported // false) == true then
+            .excluded = true
+          else
+            .excluded = (($disabled_ids | index($server.id)) != null)
+          end
+      )
+  ' "$PARSED_FILE" > "$tmp_file"
+  mv "$tmp_file" "$PARSED_FILE"
+
+  jq '
+    [
+      .servers[]?
+      | select(.excluded == true)
+      | .url
+      | select(type == "string" and length > 0)
+    ]
+    | unique
+  ' "$PARSED_FILE" > "$tmp_file"
+  mv "$tmp_file" "$EXCLUDED_FILE"
+
+  log_msg "disabled ids updated"
 }
 
 print_status() {
@@ -179,6 +250,11 @@ print_status() {
           resolved_id="$(jq -r --arg tag "$resolved_tag" '
             first((.enabled_servers // [])[]? | select(.tag == $tag) | .id) // empty
           ' "$PODKOP_FILE" 2>/dev/null || printf '')"
+          if [ -z "$resolved_id" ]; then
+            resolved_id="$(jq -r --arg tag "$resolved_tag" '
+              first((.servers // [])[]? | select(.tag == $tag) | .id) // empty
+            ' "$PARSED_FILE" 2>/dev/null || printf '')"
+          fi
         fi
         break
       fi
@@ -199,10 +275,31 @@ print_status() {
     fi
   fi
 
+  enabled_runtime_count="$(
+    jq -r '(.enabled_servers // []) | length' "$PODKOP_FILE" 2>/dev/null || printf '0'
+  )"
+  if [ "${enabled_runtime_count:-0}" -le 0 ] 2>/dev/null || { [ "$main_out_now" = "main-urltest-out" ] && [ -z "${urltest_now:-}" ]; }; then
+    active_id=''
+    main_out_now=''
+    urltest_now=''
+    resolved_id=''
+    live_proxies='{}'
+  fi
+
+  parsed_count="$(jq -r '.count // 0' "$PARSED_FILE" 2>/dev/null || printf '0')"
+  if [ "${parsed_count:-0}" -le 0 ] 2>/dev/null; then
+    active_id=''
+    main_out_now=''
+    urltest_now=''
+    resolved_id=''
+    live_proxies='{}'
+  fi
+
   jq -n \
     --arg active_id "$active_id" \
     --arg manager_enabled "$manager_enabled" \
     --arg subscription_url "$subscription_url" \
+    --arg parsed_source_url "$(jq -r '.source_url // ""' "$PARSED_FILE" 2>/dev/null || printf '')" \
     --arg update_schedule "$update_schedule" \
     --arg manager_lang "$manager_lang" \
     --arg active_group "$active_group" \
@@ -261,6 +358,7 @@ print_status() {
           enabled: ($manager_enabled == "1"),
           lang: $manager_lang,
           subscription_url: $subscription_url,
+          parsed_source_url: $parsed_source_url,
           update_schedule: $update_schedule,
           active_group: $active_group,
           selection_mode: $selection_mode,

@@ -5,7 +5,7 @@ set -eu
 APP_NAME="Obhodiq"
 APP_PKG="obhodiq"
 LUCI_PKG="luci-app-obhodiq"
-OBHODIQ_VERSION="${OBHODIQ_VERSION:-0.1.0-r2}"
+OBHODIQ_VERSION="${OBHODIQ_VERSION:-0.1.1-r1}"
 RELEASE_BASE_URL="${RELEASE_BASE_URL:-https://raw.githubusercontent.com/renqismike/obhodiq/main/dist}"
 TMP_DIR="${TMPDIR:-/tmp}/obhodiq-install"
 
@@ -16,6 +16,10 @@ log() {
 fail() {
   printf 'Error: %s\n' "$*" >&2
   exit 1
+}
+
+note() {
+  printf '%s\n' "$*" >&2
 }
 
 cleanup() {
@@ -155,6 +159,8 @@ main() {
   /etc/init.d/obhodiq enable >/dev/null 2>&1 || true
   /etc/init.d/obhodiq restart >/dev/null 2>&1 || true
 
+  note "Obhodiq is a subscription parser and Podkop integration layer."
+  note "Actual traffic routing and connection handling are performed by Podkop."
   log "${APP_NAME} installed successfully."
 }
 

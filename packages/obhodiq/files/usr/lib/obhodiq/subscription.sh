@@ -201,9 +201,26 @@ extract_placeholder_notice() {
   urldecode_text "$fragment" | tr -d '\r'
 }
 
+extract_hwid_limit_notice() {
+  [ -f "$HEADER_FILE" ] || return 0
+
+  hwid_limit="$(sed -n 's/^[Xx]-[Hh][Ww][Ii][Dd]-[Ll][Ii][Mm][Ii][Tt]:[[:space:]]*//p' "$HEADER_FILE" | tail -n 1 | tr -d '\r')"
+  hwid_max="$(sed -n 's/^[Xx]-[Hh][Ww][Ii][Dd]-[Mm][Aa][Xx]-[Dd][Ee][Vv][Ii][Cc][Ee][Ss]-[Rr][Ee][Aa][Cc][Hh][Ee][Dd]:[[:space:]]*//p' "$HEADER_FILE" | tail -n 1 | tr -d '\r')"
+
+  case "$hwid_limit:$hwid_max" in
+    true:true|true:True|True:true|True:True)
+      printf '%s\n' 'Превышен лимит устройств для этой подписки'
+      return 0
+      ;;
+  esac
+
+  return 0
+}
+
 extract_links_from_json_config() {
   json_file="$1"
   tmp_items="$(mktemp)"
+  field_sep="$(printf '\037')"
   jq -c '
     def root_items:
       if type == "array" then .[] else . end;
@@ -222,6 +239,8 @@ extract_links_from_json_config() {
       | ($tag | startswith("fallback-"))
         or ($tag | startswith("WL-"))
         or ($tag | startswith("LOOP-"))
+        or ($tag == "bridge")
+        or ($tag | startswith("bridge-"))
         or ($tag == "direct")
         or ($tag == "block")
         or ($tag == "block-http")
@@ -247,31 +266,39 @@ extract_links_from_json_config() {
 
   while IFS= read -r item; do
     [ -n "${item:-}" ] || continue
-    name="$(printf '%s' "$item" | jq -r '.name // empty' 2>/dev/null)"
-        protocol="$(printf '%s' "$item" | jq -r '.protocol // empty' 2>/dev/null)"
-        tag="$(printf '%s' "$item" | jq -r '.tag // empty' 2>/dev/null)"
-        [ -n "${name:-}" ] || continue
-    if is_auto_profile_name "$name"; then
-      continue
-    fi
+    protocol="$(printf '%s' "$item" | jq -r '.protocol // empty' 2>/dev/null)"
 
     case "$protocol" in
       vless)
-        address="$(printf '%s' "$item" | jq -r '.settings.vnext[0].address // empty' 2>/dev/null)"
-        port="$(printf '%s' "$item" | jq -r '.settings.vnext[0].port // empty' 2>/dev/null)"
-        user_id="$(printf '%s' "$item" | jq -r '.settings.vnext[0].users[0].id // empty' 2>/dev/null)"
-        encryption="$(printf '%s' "$item" | jq -r '.settings.vnext[0].users[0].encryption // "none"' 2>/dev/null)"
-        flow="$(printf '%s' "$item" | jq -r '.settings.vnext[0].users[0].flow // empty' 2>/dev/null)"
-        security="$(printf '%s' "$item" | jq -r '.streamSettings.security // "none"' 2>/dev/null)"
-        network="$(printf '%s' "$item" | jq -r '.streamSettings.network // "tcp"' 2>/dev/null)"
-        sni="$(printf '%s' "$item" | jq -r '.streamSettings.realitySettings.serverName // .streamSettings.tlsSettings.serverName // empty' 2>/dev/null)"
-        fp="$(printf '%s' "$item" | jq -r '.streamSettings.realitySettings.fingerprint // empty' 2>/dev/null)"
-        pbk="$(printf '%s' "$item" | jq -r '.streamSettings.realitySettings.publicKey // empty' 2>/dev/null)"
-        sid="$(printf '%s' "$item" | jq -r '.streamSettings.realitySettings.shortId // empty' 2>/dev/null)"
-        header_type="$(printf '%s' "$item" | jq -r '.streamSettings.tcpSettings.header.type // empty' 2>/dev/null)"
-        path="$(printf '%s' "$item" | jq -r '.streamSettings.wsSettings.path // .streamSettings.httpupgradeSettings.path // empty' 2>/dev/null)"
-        host="$(printf '%s' "$item" | jq -r '.streamSettings.wsSettings.headers.Host // .streamSettings.httpupgradeSettings.host // empty' 2>/dev/null)"
-        service_name="$(printf '%s' "$item" | jq -r '.streamSettings.grpcSettings.serviceName // empty' 2>/dev/null)"
+        fields="$(
+          printf '%s' "$item" | jq -r '[
+            .name // "",
+            .settings.vnext[0].address // "",
+            (.settings.vnext[0].port // "" | tostring),
+            .settings.vnext[0].users[0].id // "",
+            .settings.vnext[0].users[0].encryption // "none",
+            .settings.vnext[0].users[0].flow // "",
+            .streamSettings.security // "none",
+            .streamSettings.network // "tcp",
+            (.streamSettings.realitySettings.serverName // .streamSettings.tlsSettings.serverName // ""),
+            .streamSettings.realitySettings.fingerprint // "",
+            .streamSettings.realitySettings.publicKey // "",
+            .streamSettings.realitySettings.shortId // "",
+            .streamSettings.tcpSettings.header.type // "",
+            (.streamSettings.wsSettings.path // .streamSettings.httpupgradeSettings.path // ""),
+            (.streamSettings.wsSettings.headers.Host // .streamSettings.httpupgradeSettings.host // ""),
+            .streamSettings.grpcSettings.serviceName // ""
+          ] | map(tostring) | join("\u001f")' 2>/dev/null
+        )"
+        [ -n "${fields:-}" ] || continue
+        IFS="$field_sep" read -r name address port user_id encryption flow security network sni fp pbk sid header_type path host service_name <<EOF
+$fields
+EOF
+        unset IFS
+        [ -n "${name:-}" ] || continue
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         [ -n "${address:-}" ] || continue
         [ "$address" = "0.0.0.0" ] && continue
         link="vless://${user_id}@${address}:${port}?encryption=${encryption}&security=${security}&type=${network}"
@@ -287,17 +314,31 @@ extract_links_from_json_config() {
         printf '%s#%s\n' "$link" "$name"
         ;;
       vmess)
-        address="$(printf '%s' "$item" | jq -r '.settings.vnext[0].address // empty' 2>/dev/null)"
-        port="$(printf '%s' "$item" | jq -r '.settings.vnext[0].port // empty' 2>/dev/null)"
-        user_id="$(printf '%s' "$item" | jq -r '.settings.vnext[0].users[0].id // empty' 2>/dev/null)"
-        alter_id="$(printf '%s' "$item" | jq -r '.settings.vnext[0].users[0].alterId // 0' 2>/dev/null)"
-        security="$(printf '%s' "$item" | jq -r '.settings.vnext[0].users[0].security // "auto"' 2>/dev/null)"
-        network="$(printf '%s' "$item" | jq -r '.streamSettings.network // "tcp"' 2>/dev/null)"
-        tls="$(printf '%s' "$item" | jq -r '.streamSettings.security // empty' 2>/dev/null)"
-        host="$(printf '%s' "$item" | jq -r '.streamSettings.wsSettings.headers.Host // .streamSettings.httpupgradeSettings.host // empty' 2>/dev/null)"
-        path="$(printf '%s' "$item" | jq -r '.streamSettings.wsSettings.path // .streamSettings.httpupgradeSettings.path // empty' 2>/dev/null)"
-        service_name="$(printf '%s' "$item" | jq -r '.streamSettings.grpcSettings.serviceName // empty' 2>/dev/null)"
-        sni="$(printf '%s' "$item" | jq -r '.streamSettings.tlsSettings.serverName // empty' 2>/dev/null)"
+        fields="$(
+          printf '%s' "$item" | jq -r '[
+            .name // "",
+            .settings.vnext[0].address // "",
+            (.settings.vnext[0].port // "" | tostring),
+            .settings.vnext[0].users[0].id // "",
+            (.settings.vnext[0].users[0].alterId // 0 | tostring),
+            .settings.vnext[0].users[0].security // "auto",
+            .streamSettings.network // "tcp",
+            .streamSettings.security // "",
+            (.streamSettings.wsSettings.headers.Host // .streamSettings.httpupgradeSettings.host // ""),
+            (.streamSettings.wsSettings.path // .streamSettings.httpupgradeSettings.path // ""),
+            .streamSettings.grpcSettings.serviceName // "",
+            .streamSettings.tlsSettings.serverName // ""
+          ] | map(tostring) | join("\u001f")' 2>/dev/null
+        )"
+        [ -n "${fields:-}" ] || continue
+        IFS="$field_sep" read -r name address port user_id alter_id security network tls host path service_name sni <<EOF
+$fields
+EOF
+        unset IFS
+        [ -n "${name:-}" ] || continue
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         [ -n "${address:-}" ] || continue
         [ -n "${user_id:-}" ] || continue
         vmess_json="$(jq -nc \
@@ -327,15 +368,29 @@ extract_links_from_json_config() {
         printf 'vmess://%s#%s\n' "$vmess_b64" "$name"
         ;;
       trojan)
-        address="$(printf '%s' "$item" | jq -r '.settings.servers[0].address // empty' 2>/dev/null)"
-        port="$(printf '%s' "$item" | jq -r '.settings.servers[0].port // empty' 2>/dev/null)"
-        password="$(printf '%s' "$item" | jq -r '.settings.servers[0].password // empty' 2>/dev/null)"
-        network="$(printf '%s' "$item" | jq -r '.streamSettings.network // "tcp"' 2>/dev/null)"
-        security="$(printf '%s' "$item" | jq -r '.streamSettings.security // "tls"' 2>/dev/null)"
-        sni="$(printf '%s' "$item" | jq -r '.streamSettings.tlsSettings.serverName // empty' 2>/dev/null)"
-        host="$(printf '%s' "$item" | jq -r '.streamSettings.wsSettings.headers.Host // .streamSettings.httpupgradeSettings.host // empty' 2>/dev/null)"
-        path="$(printf '%s' "$item" | jq -r '.streamSettings.wsSettings.path // .streamSettings.httpupgradeSettings.path // empty' 2>/dev/null)"
-        service_name="$(printf '%s' "$item" | jq -r '.streamSettings.grpcSettings.serviceName // empty' 2>/dev/null)"
+        fields="$(
+          printf '%s' "$item" | jq -r '[
+            .name // "",
+            .settings.servers[0].address // "",
+            (.settings.servers[0].port // "" | tostring),
+            .settings.servers[0].password // "",
+            .streamSettings.network // "tcp",
+            .streamSettings.security // "tls",
+            .streamSettings.tlsSettings.serverName // "",
+            (.streamSettings.wsSettings.headers.Host // .streamSettings.httpupgradeSettings.host // ""),
+            (.streamSettings.wsSettings.path // .streamSettings.httpupgradeSettings.path // ""),
+            .streamSettings.grpcSettings.serviceName // ""
+          ] | map(tostring) | join("\u001f")' 2>/dev/null
+        )"
+        [ -n "${fields:-}" ] || continue
+        IFS="$field_sep" read -r name address port password network security sni host path service_name <<EOF
+$fields
+EOF
+        unset IFS
+        [ -n "${name:-}" ] || continue
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         [ -n "${address:-}" ] || continue
         [ -n "${password:-}" ] || continue
         link="trojan://${password}@${address}:${port}?security=${security}&type=${network}"
@@ -346,12 +401,26 @@ extract_links_from_json_config() {
         printf '%s#%s\n' "$link" "$name"
         ;;
       shadowsocks)
-        address="$(printf '%s' "$item" | jq -r '.settings.servers[0].address // empty' 2>/dev/null)"
-        port="$(printf '%s' "$item" | jq -r '.settings.servers[0].port // empty' 2>/dev/null)"
-        method="$(printf '%s' "$item" | jq -r '.settings.servers[0].method // empty' 2>/dev/null)"
-        password="$(printf '%s' "$item" | jq -r '.settings.servers[0].password // empty' 2>/dev/null)"
-        plugin="$(printf '%s' "$item" | jq -r '.settings.servers[0].plugin // empty' 2>/dev/null)"
-        plugin_opts="$(printf '%s' "$item" | jq -r '.settings.servers[0].pluginOpts // empty' 2>/dev/null)"
+        fields="$(
+          printf '%s' "$item" | jq -r '[
+            .name // "",
+            .settings.servers[0].address // "",
+            (.settings.servers[0].port // "" | tostring),
+            .settings.servers[0].method // "",
+            .settings.servers[0].password // "",
+            .settings.servers[0].plugin // "",
+            .settings.servers[0].pluginOpts // ""
+          ] | map(tostring) | join("\u001f")' 2>/dev/null
+        )"
+        [ -n "${fields:-}" ] || continue
+        IFS="$field_sep" read -r name address port method password plugin plugin_opts <<EOF
+$fields
+EOF
+        unset IFS
+        [ -n "${name:-}" ] || continue
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         [ -n "${address:-}" ] || continue
         [ -n "${method:-}" ] || continue
         ss_cred="$(printf '%s:%s' "$method" "$password" | base64 | tr -d '\r\n')"
@@ -363,11 +432,25 @@ extract_links_from_json_config() {
         printf '%s#%s\n' "$link" "$name"
         ;;
       socks)
-        address="$(printf '%s' "$item" | jq -r '.settings.servers[0].address // empty' 2>/dev/null)"
-        port="$(printf '%s' "$item" | jq -r '.settings.servers[0].port // empty' 2>/dev/null)"
-        version="$(printf '%s' "$item" | jq -r '.settings.version // "5"' 2>/dev/null)"
-        username="$(printf '%s' "$item" | jq -r '.settings.servers[0].users[0].user // empty' 2>/dev/null)"
-        password="$(printf '%s' "$item" | jq -r '.settings.servers[0].users[0].pass // empty' 2>/dev/null)"
+        fields="$(
+          printf '%s' "$item" | jq -r '[
+            .name // "",
+            .settings.servers[0].address // "",
+            (.settings.servers[0].port // "" | tostring),
+            (.settings.version // "5" | tostring),
+            .settings.servers[0].users[0].user // "",
+            .settings.servers[0].users[0].pass // ""
+          ] | map(tostring) | join("\u001f")' 2>/dev/null
+        )"
+        [ -n "${fields:-}" ] || continue
+        IFS="$field_sep" read -r name address port version username password <<EOF
+$fields
+EOF
+        unset IFS
+        [ -n "${name:-}" ] || continue
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         [ -n "${address:-}" ] || continue
         scheme_name="socks5"
         [ "$version" = "4" ] && scheme_name="socks4"
@@ -379,12 +462,26 @@ extract_links_from_json_config() {
         printf '%s#%s\n' "$link" "$name"
         ;;
       hysteria|hysteria2)
-        address="$(printf '%s' "$item" | jq -r '.settings.address // empty' 2>/dev/null)"
-        port="$(printf '%s' "$item" | jq -r '.settings.port // empty' 2>/dev/null)"
-        auth="$(printf '%s' "$item" | jq -r '.streamSettings.hysteriaSettings.auth // .settings.auth // empty' 2>/dev/null)"
-        sni="$(printf '%s' "$item" | jq -r '.streamSettings.tlsSettings.serverName // .settings.address // empty' 2>/dev/null)"
-        obfs="$(printf '%s' "$item" | jq -r '.streamSettings.finalmask.udp[0].type // empty' 2>/dev/null)"
-        obfs_password="$(printf '%s' "$item" | jq -r '.streamSettings.finalmask.udp[0].settings.password // empty' 2>/dev/null)"
+        fields="$(
+          printf '%s' "$item" | jq -r '[
+            .name // "",
+            .settings.address // "",
+            (.settings.port // "" | tostring),
+            (.streamSettings.hysteriaSettings.auth // .settings.auth // ""),
+            (.streamSettings.tlsSettings.serverName // .settings.address // ""),
+            .streamSettings.finalmask.udp[0].type // "",
+            .streamSettings.finalmask.udp[0].settings.password // ""
+          ] | map(tostring) | join("\u001f")' 2>/dev/null
+        )"
+        [ -n "${fields:-}" ] || continue
+        IFS="$field_sep" read -r name address port auth sni obfs obfs_password <<EOF
+$fields
+EOF
+        unset IFS
+        [ -n "${name:-}" ] || continue
+        if is_auto_profile_name "$name"; then
+          continue
+        fi
         [ -n "${address:-}" ] || continue
         link="hy2://${auth}@${address}:${port}?sni=${sni}&insecure=0"
         [ -n "${obfs:-}" ] && link="${link}&obfs=${obfs}"
@@ -420,10 +517,11 @@ clear_subscription_error() {
 
 reset_subscription_cache() {
   init_storage_files
-  printf '%s\n' '{"updated_at":null,"count":0,"servers":[]}' > "$PARSED_FILE"
+  printf '%s\n' '{"updated_at":null,"source_url":"","count":0,"servers":[]}' > "$PARSED_FILE"
   printf '%s\n' '{}' > "$META_FILE"
   printf '%s\n' '{}' > "$EXPORT_FILE"
   printf '%s\n' '{}' > "$PODKOP_FILE"
+  printf '%s\n' '{}' > "$LATENCY_FILE"
   printf '%s\n' '{}' > "$PODKOP_APPLY_RESULT_FILE"
 }
 
@@ -458,6 +556,10 @@ update_schedule_to_cron() {
 
 sync_update_schedule() {
   schedule="$(get_update_schedule)"
+  manager_enabled="$(get_manager_enabled)"
+  if [ "$manager_enabled" != "1" ]; then
+    schedule="never"
+  fi
   cron_expr="$(update_schedule_to_cron "$schedule")"
   crontab_file="/etc/crontabs/root"
   tmp_file="$(mktemp)"
@@ -505,13 +607,13 @@ set_update_schedule() {
 
 fetch_subscription() {
   init_storage_files
+  clear_subscription_error
+  : > "$RAW_FILE"
+  : > "$HEADER_FILE"
   url="$(config_get main subscription_url '')"
   [ -n "${url:-}" ] || {
     log_msg "subscription url is empty"
     set_subscription_error "Ошибка подписки: не задана ссылка"
-    reset_subscription_cache
-    : > "$RAW_FILE"
-    : > "$HEADER_FILE"
     return 1
   }
 
@@ -532,9 +634,6 @@ fetch_subscription() {
     rm -f "$tmp_body" "$tmp_headers"
     log_msg "failed to fetch subscription"
     set_subscription_error "Ошибка подписки: не удалось загрузить ссылку"
-    reset_subscription_cache
-    : > "$RAW_FILE"
-    : > "$HEADER_FILE"
     return 1
   fi
 
@@ -633,17 +732,21 @@ parse_subscription_meta() {
 parse_subscription() {
   require_jq || return 1
   init_storage_files
+  source_url="$(config_get main subscription_url '')"
   [ -f "$RAW_FILE" ] || {
     log_msg "raw subscription not found"
     set_subscription_error "Ошибка подписки: данные подписки не загружены"
-    reset_subscription_cache
     return 1
   }
 
   prev_file="$(mktemp)"
   [ -f "$PARSED_FILE" ] && cp "$PARSED_FILE" "$prev_file"
-  reset_subscription_cache
-  set_subscription_error "Ошибка подписки: не удалось разобрать формат или не найдено поддерживаемых серверов"
+  previous_source_url="$(jq -r '.source_url // ""' "$prev_file" 2>/dev/null || printf '')"
+  if [ "$previous_source_url" != "$source_url" ]; then
+    source_url_changed="1"
+  else
+    source_url_changed="0"
+  fi
   parse_input_file="$RAW_FILE"
   decoded_file=''
   json_file=''
@@ -699,9 +802,14 @@ parse_subscription() {
         type_label="$(build_type_label "$scheme" "$transport" "$security")"
         unsupported_flag="false"
         unsupported_reason=""
+        maybe_unsupported_flag="false"
+        maybe_unsupported_reason=""
         if [ "$transport" = "xhttp" ]; then
           unsupported_flag="true"
           unsupported_reason="Podkop не поддерживает XHTTP"
+        elif [ "$transport" = "ws" ]; then
+          maybe_unsupported_flag="true"
+          maybe_unsupported_reason="WS может не поддерживаться"
         elif [ "$scheme" = "happ" ]; then
           unsupported_flag="true"
           unsupported_reason="Podkop не поддерживает HAPP"
@@ -715,13 +823,28 @@ parse_subscription() {
         group_name="$(jq -r --arg url "$url" '
           first(.servers[]? | select(.url == $url) | .group) // "default"
         ' "$prev_file" 2>/dev/null || printf 'default')"
+        had_prev_server="$(jq -r --arg url "$url" '
+          if any(.servers[]?; .url == $url) then "true" else "false" end
+        ' "$prev_file" 2>/dev/null || printf 'false')"
         excluded_flag="$(jq -r --arg url "$url" '
           first(.servers[]? | select(.url == $url) | .excluded) // false
         ' "$prev_file" 2>/dev/null || printf 'false')"
+        if [ "$excluded_flag" != "true" ] && [ "$had_prev_server" != "true" ]; then
+          excluded_flag="$(jq -r --arg url "$url" '
+            if type == "array" then
+              any(.[]?; . == $url)
+            else
+              false
+            end
+          ' "$EXCLUDED_FILE" 2>/dev/null || printf 'false')"
+        fi
         case "$excluded_flag" in
           true|false) ;;
           *) excluded_flag="false" ;;
         esac
+        if [ "$maybe_unsupported_flag" = "true" ] && [ "$had_prev_server" != "true" ] && [ "$excluded_flag" != "true" ]; then
+          excluded_flag="true"
+        fi
         [ "$unsupported_flag" = "true" ] && excluded_flag="true"
         jq -n \
           --arg id "srv-$count" \
@@ -734,7 +857,9 @@ parse_subscription() {
           --arg link "$proxy_link" \
           --arg url "$url" \
           --arg group "$group_name" \
+          --arg maybe_unsupported_reason "$maybe_unsupported_reason" \
           --arg unsupported_reason "$unsupported_reason" \
+          --argjson maybe_unsupported "$maybe_unsupported_flag" \
           --argjson unsupported "$unsupported_flag" \
           --argjson excluded "$excluded_flag" \
           '{
@@ -749,6 +874,8 @@ parse_subscription() {
             url:$url,
             group:$group,
             helper:false,
+            maybe_unsupported:$maybe_unsupported,
+            maybe_unsupported_reason:$maybe_unsupported_reason,
             unsupported:$unsupported,
             unsupported_reason:$unsupported_reason,
             excluded:$excluded
@@ -761,10 +888,22 @@ parse_subscription() {
     rm -f "$tmp_list"
     rm -f "$prev_file"
     rm -f "$decoded_file" "$json_file" "$json_links_file"
+    if [ "$source_url_changed" = "1" ]; then
+      jq -n \
+        --arg source_url "$source_url" \
+        '{updated_at:null,source_url:$source_url,count:0,servers:[]}' > "$PARSED_FILE"
+      printf '%s\n' '{}' > "$EXPORT_FILE"
+      printf '%s\n' '{}' > "$PODKOP_FILE"
+      printf '%s\n' '{}' > "$LATENCY_FILE"
+      printf '%s\n' '{}' > "$PODKOP_APPLY_RESULT_FILE"
+    fi
     parse_subscription_meta
-    notice_message="$(jq -r '(.notices[0] // .announce // "")' "$META_FILE" 2>/dev/null || true)"
+    notice_message="$(extract_hwid_limit_notice || true)"
     if [ -z "${notice_message:-}" ]; then
       notice_message="$(extract_placeholder_notice "$parse_input_file" || true)"
+    fi
+    if [ -z "${notice_message:-}" ]; then
+      notice_message="$(jq -r '(.notices[0] // .announce // "")' "$META_FILE" 2>/dev/null || true)"
     fi
     if [ -n "${notice_message:-}" ]; then
       set_subscription_error "Ошибка подписки: $notice_message"
@@ -818,7 +957,11 @@ parse_subscription() {
   count="$(jq -s 'length' "$tmp_list" 2>/dev/null || printf '0')"
 
   updated_at="$(date +%s 2>/dev/null || printf '0')"
-  jq -s --argjson updated_at "$updated_at" --argjson count "$count" '{updated_at:$updated_at,count:$count,servers:.}' "$tmp_list" > "$PARSED_FILE"
+  jq -s \
+    --argjson updated_at "$updated_at" \
+    --arg source_url "$source_url" \
+    --argjson count "$count" \
+    '{updated_at:$updated_at,source_url:$source_url,count:$count,servers:.}' "$tmp_list" > "$PARSED_FILE"
   rm -f "$tmp_list"
   rm -f "$prev_file"
   rm -f "$decoded_file" "$json_file" "$json_links_file"
@@ -833,11 +976,31 @@ export_active_server() {
 
   active_id="$(config_get main active_server_id '')"
   if [ -z "${active_id:-}" ]; then
-    active_id="$(jq -r '.servers[0].id // empty' "$PARSED_FILE")"
+    active_id="$(jq -r '
+      first(
+        .servers[]?
+        | select((.excluded // false) != true and (.unsupported // false) != true)
+        | .id
+      ) // .servers[0].id // empty
+    ' "$PARSED_FILE")"
   fi
 
-  selected_json="$(jq -c --arg id "$active_id" '.servers[] | select(.id == $id)' "$PARSED_FILE")"
-  [ -n "${selected_json:-}" ] || return 1
+  selected_json="$(jq -c --arg id "$active_id" '
+    first(
+      .servers[]?
+      | select(.id == $id and (.excluded // false) != true and (.unsupported // false) != true)
+    ) // first(
+      .servers[]?
+      | select((.excluded // false) != true and (.unsupported // false) != true)
+    ) // empty
+  ' "$PARSED_FILE")"
+
+  if [ -n "${selected_json:-}" ] && printf '%s' "$selected_json" | jq -e . >/dev/null 2>&1; then
+    active_id="$(printf '%s' "$selected_json" | jq -r '.id // empty')"
+  else
+    active_id=''
+    selected_json='null'
+  fi
 
   jq -n \
     --arg active_id "$active_id" \
@@ -865,7 +1028,7 @@ sync_podkop_export() {
     jq -c '
       [
         .servers[]
-        | select(.excluded != true and (.transport // "") != "xhttp")
+        | select(.excluded != true and (.unsupported // false) != true and (.transport // "") != "xhttp")
         | {
             id,
             original_tag: .tag,
@@ -891,19 +1054,28 @@ sync_podkop_export() {
     active_json='{}'
   fi
   active_server_id="$(printf '%s' "$active_json" | jq -r '.active_server_id // empty')"
+  enabled_count="$(
+    printf '%s' "$enabled_json" | jq -r 'length' 2>/dev/null || printf '0'
+  )"
+  if [ "${enabled_count:-0}" -le 0 ] 2>/dev/null; then
+    active_server_id=''
+  fi
   active_tag="$(
     printf '%s' "$enabled_json" | jq -r --arg id "$active_server_id" '
       first(.[]? | select(.id == $id) | .tag) // empty
     '
   )"
   selection_mode="$(config_get main selection_mode 'auto')"
-  podkop_node="main-urltest-out"
-  [ "$selection_mode" = "manual" ] && podkop_node="$active_tag"
+  podkop_node=""
+  if [ "${enabled_count:-0}" -gt 0 ] 2>/dev/null; then
+    podkop_node="main-urltest-out"
+    [ "$selection_mode" = "manual" ] && podkop_node="$active_tag"
+  fi
 
   jq -n \
     --arg mode "urltest" \
     --arg selection_mode "$selection_mode" \
-    --arg active_server_id "$(printf '%s' "$active_json" | jq -r '.active_server_id // empty')" \
+    --arg active_server_id "$active_server_id" \
     --arg active_tag "$active_tag" \
     --arg podkop_node "$podkop_node" \
     --argjson enabled_servers "$enabled_json" \
@@ -934,7 +1106,6 @@ write_podkop_apply_script() {
   enabled_links="$(
     printf '%s' "$podkop_json" | jq -r '.enabled_servers[]? | .url'
   )"
-  [ -n "${enabled_links:-}" ] || return 1
 
   cat > "$PODKOP_UCI_SNIPPET_FILE" <<EOF
 config section '${section_name}'
@@ -1022,10 +1193,13 @@ apply_podkop_config() {
   podkop_node="$(printf '%s' "$preview_json" | jq -r '.podkop_node // empty')"
   enabled_count="$(printf '%s' "$preview_json" | jq -r '.enabled_count // 0')"
   selection_mode="$(config_get main selection_mode 'auto')"
-  desired_proxy="main-urltest-out"
-  [ "$selection_mode" = "manual" ] && [ -n "${active_tag:-}" ] && desired_proxy="$active_tag"
+  desired_proxy=""
+  if [ "${enabled_count:-0}" -gt 0 ] 2>/dev/null; then
+    desired_proxy="main-urltest-out"
+    [ "$selection_mode" = "manual" ] && [ -n "${active_tag:-}" ] && desired_proxy="$active_tag"
+  fi
   enabled_links="$(
-    jq -r '.servers[] | select(.excluded != true and (.transport // "") != "xhttp") | .url' "$PARSED_FILE"
+    jq -r '.servers[] | select(.excluded != true and (.unsupported // false) != true and (.transport // "") != "xhttp") | .url' "$PARSED_FILE"
   )"
   live_apply='{}'
 
@@ -1041,6 +1215,8 @@ apply_podkop_config() {
     if [ -n "${podkop_node:-}" ]; then
       "$UCI_BIN" -q set "podkop.config=config" >/dev/null 2>&1 || true
       "$UCI_BIN" -q set "podkop.config.node=${podkop_node}" >/dev/null 2>&1 || true
+    else
+      "$UCI_BIN" -q delete "podkop.config.node" >/dev/null 2>&1 || true
     fi
     "$UCI_BIN" -q commit podkop
 
@@ -1080,6 +1256,7 @@ apply_podkop_config() {
 
     jq -n \
       --arg applied "true" \
+      --argjson updated_at "$(date +%s 2>/dev/null || printf '0')" \
       --arg section_name "$section_name" \
       --arg active_tag "$active_tag" \
       --arg podkop_node "$podkop_node" \
@@ -1091,19 +1268,29 @@ apply_podkop_config() {
       --arg uci_snippet_path "$PODKOP_UCI_SNIPPET_FILE" \
       '{
         applied: ($applied == "true"),
+        updated_at: $updated_at,
         section_name: $section_name,
         active_tag: $active_tag,
         podkop_node: $podkop_node,
         selection_mode: $selection_mode,
-        desired_proxy: $desired_proxy,
+      desired_proxy: $desired_proxy,
         live_apply: $live_apply,
         enabled_count: ($enabled_count | tonumber),
         script_path: $script_path,
         uci_snippet_path: $uci_snippet_path
       }' > "$PODKOP_APPLY_RESULT_FILE"
+
+    if has_podkop_cmd; then
+      (
+        /usr/bin/obhodiq refresh-latency >/tmp/obhodiq-auto-latency.log 2>&1 \
+          || obhodiq refresh-latency >/tmp/obhodiq-auto-latency.log 2>&1 \
+          || true
+      ) &
+    fi
   else
     jq -n \
       --arg applied "false" \
+      --argjson updated_at "$(date +%s 2>/dev/null || printf '0')" \
       --arg section_name "$section_name" \
       --arg active_tag "$active_tag" \
       --arg podkop_node "$podkop_node" \
@@ -1114,6 +1301,7 @@ apply_podkop_config() {
       --arg uci_snippet_path "$PODKOP_UCI_SNIPPET_FILE" \
       '{
         applied: ($applied == "true"),
+        updated_at: $updated_at,
         section_name: $section_name,
         active_tag: $active_tag,
         podkop_node: $podkop_node,
