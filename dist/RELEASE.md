@@ -10,12 +10,12 @@ Main changes in this release:
 
 - verified clean install and clean reinstall on OpenWrt `24.10.6` (`opkg`) and OpenWrt `25.12.5` (`apk`)
 - verified clean removal of Obhodiq without removing or breaking Podkop
-- refreshed package contents so backend, CGI, init script, CLI, LuCI page and runtime helpers are included in release packages
+- refreshed package contents so backend, CGI, init script, CLI, LuCI page and runtime helper scripts are included in release packages
 - fixed cases where old subscription data could survive after a failed update or overlapping refresh
 - fixed manual server switching so repeated switching between different servers is applied correctly
 - fixed auto-update behavior so disabling Obhodiq also stops its cron-based refresh
 - improved subscription import flow and provider-wrapper handling
-- kept partial `HApp 1.0` emulation for some wrapped subscription endpoints
+- kept partial `HApp 1.0` emulation for some wrapped subscription feeds
 - `WS` servers are now imported disabled by default, but can still be enabled manually
 - updated install/uninstall scripts and project documentation
 
@@ -36,12 +36,12 @@ Tested with:
 
 - подтверждена чистая установка и чистая переустановка на OpenWrt `24.10.6` (`opkg`) и OpenWrt `25.12.5` (`apk`)
 - подтверждено чистое удаление Obhodiq без удаления и поломки Podkop
-- обновлён состав пакетов: в релизные файлы входят backend, CGI, init-скрипт, CLI, LuCI-страница и runtime-хелперы
+- обновлён состав пакетов: в релизные файлы входят backend, CGI, init-скрипт, CLI, LuCI-страница и служебные runtime-скрипты
 - исправлены случаи, когда после неудачного обновления или пересекающихся refresh-запусков могло оставаться старое состояние подписки
 - исправлено ручное переключение серверов: повторное переключение между разными серверами теперь применяется корректно
 - исправлена логика автообновления: при выключении Obhodiq его cron-обновление тоже останавливается
 - улучшен импорт подписок и обработка провайдерских обёрток
-- сохранена частичная эмуляция `HApp 1.0` для части обёрнутых subscription-endpoint
+- сохранена частичная эмуляция `HApp 1.0` для части обёрнутых точек выдачи подписок
 - `WS`-серверы теперь импортируются выключенными по умолчанию, но их можно включить вручную
 - обновлены `install/uninstall`-скрипты и документация проекта
 
