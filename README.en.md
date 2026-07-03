@@ -12,9 +12,9 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 > Obhodiq does **not** replace Podkop. It works **only together with** the original Podkop and requires Podkop to be installed first.
 
 > [!IMPORTANT]
-> Obhodiq is **not a standalone VPN client** and **not a VPN service**. It does not provide servers, does not establish tunnels, does not route traffic by itself, and does not provide access to any resources without an already installed Podkop.
+> Disclaimer. Obhodiq is **not a censorship-circumvention tool, not a VPN service, and not a standalone VPN client**. The author does not support using the project to violate the laws of any country.
 >
-> Technically, Obhodiq does one thing: **it processes a subscription link and prepares configuration data for Podkop**. Actual connection handling, route selection, `URLTest`, transport behavior, and traffic processing are performed by Podkop and its dependencies.
+> The project is intended for **technical subscription processing and Podkop configuration management on OpenWrt**: Obhodiq takes a subscription link, parses it, and prepares configuration data for an already installed Podkop. Actual connection handling, `URLTest`, routing, transport behavior, and traffic processing are handled by Podkop and its dependencies.
 
 > [!WARNING]
 > Obhodiq is currently in **beta**. It is already usable, but different providers, subscription styles, and individual servers may behave differently.
