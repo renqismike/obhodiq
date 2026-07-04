@@ -68,6 +68,14 @@
       .replace(/'/g, '&#39;');
   }
 
+  function normalizeDisplayName(value) {
+    return String(value == null ? '' : value)
+      .replace(/([\u{1F1E6}-\u{1F1FF}]{2})/gu, ' $1 ')
+      .replace(/([🟢🔃🚀🌐🐢])/gu, ' $1 ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function bytesToHuman(bytes) {
     var value = Number(bytes || 0);
     if (!isFinite(value) || value <= 0) {
@@ -257,7 +265,7 @@
         '<tr>',
         '<td class="radio-wrap"><input class="server-radio" data-server-radio="' + escapeHtml(server.id) + '" type="radio" name="primary-mode" value="' + escapeHtml(server.id) + '"' + primaryChecked + (server.unsupported ? ' disabled' : '') + '></td>',
         '<td class="toggle-wrap"><input class="server-toggle" data-server-toggle="' + escapeHtml(server.id) + '" type="checkbox"' + enabledChecked + (server.unsupported ? ' disabled' : '') + '></td>',
-        '<td><div class="server-main">' + escapeHtml(server.name) + '</div><div class="server-sub">' + escapeHtml(secondary.join(' • ')) + '</div></td>',
+        '<td><div class="server-main">' + escapeHtml(normalizeDisplayName(server.name)) + '</div><div class="server-sub">' + escapeHtml(secondary.join(' • ')) + '</div></td>',
         '<td>' + escapeHtml(server.type_label || '-') + '</td>',
         '<td>' + buildStatusText(server) + '</td>',
         '</tr>'
@@ -288,7 +296,7 @@
         '<article class="preview-item">',
         '<div class="preview-item-head">',
         '<div>',
-        '<div class="preview-item-name">' + escapeHtml(server.name) + '</div>',
+        '<div class="preview-item-name">' + escapeHtml(normalizeDisplayName(server.name)) + '</div>',
         '<div class="preview-item-type">' + escapeHtml(flags.join(' • ') || (server.type_label || '-')) + '</div>',
         '</div>',
         '<button class="btn btn-secondary btn-small" type="button" data-copy-link="' + escapeHtml(server.id) + '">Копировать</button>',
