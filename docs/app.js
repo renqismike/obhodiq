@@ -1,5 +1,24 @@
 (function () {
-  var API_BASE = 'https://demo-api.invalid/obhodiq-api';
+  function resolveApiBase() {
+    try {
+      var params = new URLSearchParams(window.location.search || '');
+      var override = (params.get('api') || '').trim();
+      if (override) {
+        return override.replace(/\/$/, '');
+      }
+    } catch (error) {
+      // Ignore URLSearchParams issues and continue with host-based fallback.
+    }
+
+    var host = (window.location && window.location.hostname) || '';
+    if (host === 'demo-api.invalid' || host === '127.0.0.1') {
+      return (window.location.origin || '').replace(/\/$/, '') + '/obhodiq-api';
+    }
+
+    return 'https://demo-api.invalid/obhodiq-api';
+  }
+
+  var API_BASE = resolveApiBase();
 
   var state = {
     raw: null,
