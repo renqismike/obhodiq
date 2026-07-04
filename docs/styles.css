@@ -247,9 +247,30 @@ body {
 .servers-table {
   width: 100%;
   min-width: 980px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   background: var(--panel-2);
+}
+
+.servers-table col.col-primary {
+  width: 84px;
+}
+
+.servers-table col.col-enabled {
+  width: 72px;
+}
+
+.servers-table col.col-server {
+  width: 42%;
+}
+
+.servers-table col.col-type {
+  width: 30%;
+}
+
+.servers-table col.col-status {
+  width: 160px;
 }
 
 .servers-table thead {
@@ -260,26 +281,17 @@ body {
 .servers-table td {
   padding: 14px 12px;
   vertical-align: top;
+  overflow: hidden;
 }
 
 .servers-table th:nth-child(1),
 .servers-table td:nth-child(1) {
-  width: 84px;
+  text-align: center;
 }
 
 .servers-table th:nth-child(2),
 .servers-table td:nth-child(2) {
-  width: 72px;
-}
-
-.servers-table th:nth-child(4),
-.servers-table td:nth-child(4) {
-  width: 240px;
-}
-
-.servers-table th:nth-child(5),
-.servers-table td:nth-child(5) {
-  width: 170px;
+  text-align: center;
 }
 
 .servers-table th {
@@ -313,6 +325,33 @@ body {
   color: #8fb2ee;
   font-size: 13px;
   word-break: break-word;
+}
+
+.cell-primary,
+.cell-enabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+}
+
+.cell-server,
+.cell-type,
+.cell-status {
+  min-height: 56px;
+}
+
+.cell-type {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.cell-status {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .status-pill {
@@ -433,6 +472,14 @@ body {
 
   .servers-table {
     min-width: 860px;
+  }
+
+  .servers-table col.col-server {
+    width: 320px;
+  }
+
+  .servers-table col.col-type {
+    width: 240px;
   }
 }
 
