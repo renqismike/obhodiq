@@ -238,13 +238,15 @@ body {
 }
 
 .table-shell {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--line);
   border-radius: 20px;
 }
 
 .servers-table {
   width: 100%;
+  min-width: 980px;
   border-collapse: separate;
   border-spacing: 0;
   background: var(--panel-2);
@@ -258,6 +260,26 @@ body {
 .servers-table td {
   padding: 14px 12px;
   vertical-align: top;
+}
+
+.servers-table th:nth-child(1),
+.servers-table td:nth-child(1) {
+  width: 84px;
+}
+
+.servers-table th:nth-child(2),
+.servers-table td:nth-child(2) {
+  width: 72px;
+}
+
+.servers-table th:nth-child(4),
+.servers-table td:nth-child(4) {
+  width: 240px;
+}
+
+.servers-table th:nth-child(5),
+.servers-table td:nth-child(5) {
+  width: 170px;
 }
 
 .servers-table th {
@@ -283,12 +305,14 @@ body {
 
 .server-main {
   font-weight: 800;
+  word-break: break-word;
 }
 
 .server-sub {
   margin-top: 4px;
   color: #8fb2ee;
   font-size: 13px;
+  word-break: break-word;
 }
 
 .status-pill {
@@ -301,6 +325,7 @@ body {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .status-pill.is-unsupported {
@@ -406,9 +431,8 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .servers-table th:nth-child(4),
-  .servers-table td:nth-child(4) {
-    display: none;
+  .servers-table {
+    min-width: 860px;
   }
 }
 
