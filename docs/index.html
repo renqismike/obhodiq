@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Obhodiq</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="page">
+    <section class="panel hero">
+      <div class="hero-head">
+        <div>
+          <h1>Obhodiq</h1>
+          <p class="hero-subtitle">Демо парсинга подписок для Podkop</p>
+        </div>
+        <div class="hero-badge">demo</div>
+      </div>
+
+      <div class="hero-note">
+        Эта страница только разбирает подписку и показывает результат. Пинги, реальная работа серверов и совместимость с конкретным роутером здесь не проверяются.
+      </div>
+
+      <form id="parse-form" class="form-grid">
+        <label class="field">
+          <span>Ссылка подписки</span>
+          <input id="subscription-url" type="text" placeholder="Вставьте ссылку подписки">
+        </label>
+
+        <div class="actions">
+          <button id="parse-button" class="btn btn-primary" type="submit">Разобрать подписку</button>
+          <button id="clear-button" class="btn btn-secondary" type="button">Очистить</button>
+        </div>
+      </form>
+
+      <div id="status-bar" class="status-bar">Готово к проверке.</div>
+    </section>
+
+    <section class="panel tabs-panel">
+      <div class="tabs">
+        <button class="tab is-active" data-tab="overview" type="button">Обзор</button>
+        <button class="tab" data-tab="preview" type="button">Превью для Podkop</button>
+      </div>
+
+      <div class="tab-content is-active" data-tab-content="overview">
+        <div class="summary-row">
+          <div class="summary-line" id="summary-line">Поддерживается: 0 • Ссылок для Podkop: 0 • Не поддерживается: 0</div>
+        </div>
+
+        <div id="notice-box" class="notice-box is-hidden"></div>
+
+        <div class="cards" id="meta-cards">
+          <article class="card">
+            <div class="card-label">Профиль</div>
+            <div class="card-value" id="meta-profile">-</div>
+          </article>
+          <article class="card">
+            <div class="card-label">Трафик</div>
+            <div class="card-value" id="meta-traffic">0 B</div>
+          </article>
+          <article class="card">
+            <div class="card-label">Истекает</div>
+            <div class="card-value" id="meta-expire">-</div>
+          </article>
+          <article class="card">
+            <div class="card-label">Обновлено</div>
+            <div class="card-value" id="meta-updated">-</div>
+          </article>
+          <article class="card">
+            <div class="card-label">Остаток</div>
+            <div class="card-value" id="meta-remaining">Без лимита</div>
+          </article>
+          <article class="card">
+            <div class="card-label">Осталось</div>
+            <div class="card-value" id="meta-time-left">-</div>
+          </article>
+        </div>
+
+        <div class="table-shell">
+          <table class="servers-table">
+            <thead>
+              <tr>
+                <th class="primary-col">Основной</th>
+                <th class="enabled-col">Вкл</th>
+                <th>Сервер</th>
+                <th>Тип</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody id="servers-body">
+              <tr>
+                <td colspan="5" class="empty-row">Здесь появятся серверы после разбора подписки.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-content" data-tab-content="preview">
+        <div class="preview-topline">
+          <div>Ниже показывается, какие ссылки Obhodiq подготовит для Podkop.</div>
+          <button id="copy-all-button" class="btn btn-secondary btn-small" type="button">Скопировать всё</button>
+        </div>
+        <div id="preview-list" class="preview-list">
+          <div class="preview-empty">Пока нечего показывать.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

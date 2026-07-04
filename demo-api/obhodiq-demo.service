@@ -1,0 +1,17 @@
+[Unit]
+Description=Obhodiq demo API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/obhodiq-demo
+Environment=OBHODIQ_DEMO_HOST=127.0.0.1
+Environment=OBHODIQ_DEMO_PORT=8787
+Environment=OBHODIQ_DEMO_ORIGIN=https://renqismike.github.io
+ExecStart=/usr/bin/python3 /opt/obhodiq-demo/demo-api/server.py
+Restart=always
+RestartSec=2
+User=root
+
+[Install]
+WantedBy=multi-user.target
