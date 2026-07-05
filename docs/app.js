@@ -113,18 +113,27 @@
       var params = new URLSearchParams(window.location.search || '');
       var override = (params.get('api') || '').trim();
       if (override) {
+        try {
+          window.localStorage.setItem('obhodiq-demo-api', override.replace(/\/$/, ''));
+        } catch (storageError) {
+          // ignore
+        }
         return override.replace(/\/$/, '');
       }
     } catch (error) {
       // ignore
     }
 
-    var host = (window.location && window.location.hostname) || '';
-    if (host === 'demo-api.invalid' || host === '127.0.0.1') {
-      return (window.location.origin || '').replace(/\/$/, '') + '/obhodiq-api';
+    try {
+      var savedApiBase = (window.localStorage.getItem('obhodiq-demo-api') || '').trim();
+      if (savedApiBase) {
+        return savedApiBase.replace(/\/$/, '');
+      }
+    } catch (storageError) {
+      // ignore
     }
 
-    return 'https://demo-api.invalid/obhodiq-api';
+    return (window.location.origin || '').replace(/\/$/, '') + '/obhodiq-api';
   }
 
   var API_BASE = resolveApiBase();
