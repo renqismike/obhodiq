@@ -48,10 +48,52 @@ body {
   margin-bottom: 14px;
 }
 
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #344157;
+  border-radius: 14px;
+  background: #111722;
+}
+
+.lang-btn {
+  min-width: 48px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-btn.is-active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
 .hero h1 {
   margin: 0 0 6px;
   font-size: 38px;
   line-height: 1;
+}
+
+.hero-profile {
+  margin: 0 0 10px;
+  min-height: 30px;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text);
+  word-break: break-word;
 }
 
 .hero-subtitle {
@@ -79,6 +121,11 @@ body {
   color: #ffd888;
   border-radius: 14px;
   padding: 12px 14px;
+}
+
+.hero-note {
+  margin-top: 18px;
+  margin-bottom: 0;
 }
 
 .notice-box.is-hidden {
@@ -211,7 +258,7 @@ body {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -222,6 +269,10 @@ body {
   border: 1px solid #334056;
   background: rgba(30, 39, 55, .9);
   padding: 14px 16px;
+}
+
+.cards .card:last-child {
+  grid-column: 1 / 2;
 }
 
 .card-label {
@@ -344,21 +395,27 @@ body {
 }
 
 .cell-server {
-  display: flex;
-  align-items: flex-start;
+  display: block;
+  width: 100%;
 }
 
 .cell-type {
-  display: flex;
-  align-items: flex-start;
+  display: block;
+  width: 100%;
   line-height: 1.45;
   word-break: break-word;
 }
 
 .cell-status {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+  display: block;
+  width: 100%;
+}
+
+.cell-server > div,
+.cell-type > div,
+.cell-status > div {
+  min-width: 0;
+  width: 100%;
 }
 
 .status-pill {
@@ -456,6 +513,10 @@ body {
 @media (max-width: 1080px) {
   .cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cards .card:last-child {
+    grid-column: auto;
   }
 }
 

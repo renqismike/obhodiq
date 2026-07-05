@@ -1,4 +1,113 @@
 (function () {
+  var I18N = {
+    ru: {
+      heroSubtitle: 'Демо парсинга подписок для Podkop',
+      heroNote: 'Эта страница только разбирает подписку и показывает результат. Пинги, реальная работа серверов и совместимость с конкретным роутером здесь не проверяются.',
+      subscriptionLabel: 'Ссылка подписки',
+      subscriptionPlaceholder: 'Вставьте ссылку подписки',
+      parseButton: 'Разобрать подписку',
+      parseButtonBusy: 'Разбираем...',
+      clearButton: 'Очистить',
+      tabOverview: 'Обзор',
+      tabLinks: 'Ссылки',
+      thPrimary: 'Основной',
+      thEnabled: 'Вкл',
+      thServer: 'Сервер',
+      thType: 'Тип',
+      thStatus: 'Статус',
+      cardProfile: 'Профиль',
+      cardTraffic: 'Трафик',
+      cardExpire: 'Истекает',
+      cardUpdated: 'Обновлено',
+      cardRemaining: 'Остаток',
+      cardTimeLeft: 'Осталось',
+      summarySupported: 'Поддерживается',
+      summaryInList: 'В списке',
+      summaryUnsupported: 'Не поддерживается',
+      previewTopline: 'Ниже показаны ссылки, которые Obhodiq сформировал после разбора подписки и отправляет в Podkop.',
+      copyAll: 'Скопировать всё',
+      copyOne: 'Копировать',
+      emptyServers: 'После успешного парсинга здесь появится список серверов.',
+      emptyInitial: 'Здесь появятся серверы после разбора подписки.',
+      noLinks: 'Нет ссылок для показа.',
+      nothingYet: 'Пока нечего показывать.',
+      auto: 'Авто',
+      autoDesc: 'Локальный предпросмотр URLTest-группы',
+      preview: 'Превью',
+      supported: 'Поддерживается',
+      maybe: 'Может не поддерживаться',
+      unsupported: 'Не поддерживается',
+      manual: 'Выбран вручную',
+      wsDisabled: 'WS выключен по умолчанию',
+      unlimited: 'Без лимита',
+      expired: 'Истекло',
+      dayShort: 'д.',
+      hourShort: 'ч.',
+      nothingToCopy: 'Нечего копировать.',
+      copyFailed: 'Не удалось скопировать.',
+      copiedAll: 'Все ссылки скопированы.',
+      copiedOne: 'Ссылка скопирована.',
+      needUrl: 'Вставьте ссылку подписки.',
+      parsing: 'Разбираем подписку...',
+      badResponse: 'Сервер не вернул ожидаемый ответ.',
+      parseOk: 'Подписка успешно разобрана.',
+      ready: 'Готово к проверке.'
+    },
+    en: {
+      heroSubtitle: 'Podkop subscription parsing demo',
+      heroNote: 'This page only parses a subscription and shows the result. Pings, real server operation, and compatibility with a specific router are not checked here.',
+      subscriptionLabel: 'Subscription URL',
+      subscriptionPlaceholder: 'Paste subscription URL',
+      parseButton: 'Parse subscription',
+      parseButtonBusy: 'Parsing...',
+      clearButton: 'Clear',
+      tabOverview: 'Overview',
+      tabLinks: 'Links',
+      thPrimary: 'Primary',
+      thEnabled: 'On',
+      thServer: 'Server',
+      thType: 'Type',
+      thStatus: 'Status',
+      cardProfile: 'Profile',
+      cardTraffic: 'Traffic',
+      cardExpire: 'Expires',
+      cardUpdated: 'Updated',
+      cardRemaining: 'Remaining',
+      cardTimeLeft: 'Time left',
+      summarySupported: 'Supported',
+      summaryInList: 'In list',
+      summaryUnsupported: 'Unsupported',
+      previewTopline: 'Below are the links that Obhodiq generated after parsing the subscription and sends to Podkop.',
+      copyAll: 'Copy all',
+      copyOne: 'Copy',
+      emptyServers: 'The server list will appear here after a successful parse.',
+      emptyInitial: 'Servers will appear here after the subscription is parsed.',
+      noLinks: 'No links to show.',
+      nothingYet: 'Nothing to show yet.',
+      auto: 'Auto',
+      autoDesc: 'Local URLTest group preview',
+      preview: 'Preview',
+      supported: 'Supported',
+      maybe: 'May be unsupported',
+      unsupported: 'Unsupported',
+      manual: 'Selected manually',
+      wsDisabled: 'WS disabled by default',
+      unlimited: 'Unlimited',
+      expired: 'Expired',
+      dayShort: 'd.',
+      hourShort: 'h.',
+      nothingToCopy: 'Nothing to copy.',
+      copyFailed: 'Copy failed.',
+      copiedAll: 'All links copied.',
+      copiedOne: 'Link copied.',
+      needUrl: 'Paste a subscription URL.',
+      parsing: 'Parsing subscription...',
+      badResponse: 'Server returned an unexpected response.',
+      parseOk: 'Subscription parsed successfully.',
+      ready: 'Ready to check.'
+    }
+  };
+
   function resolveApiBase() {
     try {
       var params = new URLSearchParams(window.location.search || '');
@@ -7,7 +116,7 @@
         return override.replace(/\/$/, '');
       }
     } catch (error) {
-      // Ignore URLSearchParams issues and continue with host-based fallback.
+      // ignore
     }
 
     var host = (window.location && window.location.hostname) || '';
@@ -25,7 +134,8 @@
     enabledMap: Object.create(null),
     primaryMode: 'auto',
     primaryId: '',
-    busy: false
+    busy: false,
+    lang: 'ru'
   };
 
   var form = document.getElementById('parse-form');
@@ -40,6 +150,8 @@
   var previewList = document.getElementById('preview-list');
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
   var tabContents = Array.prototype.slice.call(document.querySelectorAll('.tab-content'));
+  var langButtons = Array.prototype.slice.call(document.querySelectorAll('.lang-btn'));
+  var heroProfile = document.getElementById('hero-profile');
 
   var metaProfile = document.getElementById('meta-profile');
   var metaTraffic = document.getElementById('meta-traffic');
@@ -48,10 +160,30 @@
   var metaRemaining = document.getElementById('meta-remaining');
   var metaTimeLeft = document.getElementById('meta-time-left');
 
+  function t(key) {
+    var dict = I18N[state.lang] || I18N.ru;
+    return dict[key] || key;
+  }
+
+  function applyLanguage() {
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll('[data-i18n]').forEach(function (node) {
+      var key = node.getAttribute('data-i18n');
+      node.textContent = t(key);
+    });
+    input.placeholder = t('subscriptionPlaceholder');
+    langButtons.forEach(function (button) {
+      button.classList.toggle('is-active', button.getAttribute('data-lang') === state.lang);
+    });
+    if (!state.raw) {
+      metaRemaining.textContent = t('unlimited');
+    }
+  }
+
   function setBusy(isBusy, label) {
     state.busy = !!isBusy;
     parseButton.disabled = !!isBusy;
-    parseButton.textContent = isBusy ? (label || 'Разбираем...') : 'Разобрать подписку';
+    parseButton.textContent = isBusy ? (label || t('parseButtonBusy')) : t('parseButton');
   }
 
   function setStatus(message, isError) {
@@ -84,7 +216,6 @@
 
     var units = ['B', 'KB', 'MB', 'GB', 'TB'];
     var idx = 0;
-
     while (value >= 1024 && idx < units.length - 1) {
       value /= 1024;
       idx++;
@@ -104,7 +235,7 @@
       return '-';
     }
 
-    return date.toLocaleString('ru-RU');
+    return date.toLocaleString(state.lang === 'ru' ? 'ru-RU' : 'en-US');
   }
 
   function formatTimeLeft(expireTs) {
@@ -115,22 +246,17 @@
 
     var now = Math.floor(Date.now() / 1000);
     var diff = expire - now;
-
     if (diff <= 0) {
-      return 'Истекло';
+      return t('expired');
     }
 
     var days = Math.floor(diff / 86400);
     var hours = Math.floor((diff % 86400) / 3600);
-    return days > 0 ? days + ' д. ' + hours + ' ч.' : hours + ' ч.';
+    return days > 0 ? days + ' ' + t('dayShort') + ' ' + hours + ' ' + t('hourShort') : hours + ' ' + t('hourShort');
   }
 
   function normalizeRawResponse(payload) {
-    if (!payload || !payload.status) {
-      return null;
-    }
-
-    return payload.status;
+    return payload && payload.status ? payload.status : null;
   }
 
   function getServers() {
@@ -158,14 +284,12 @@
 
   function buildStatusText(server) {
     if (server.unsupported === true) {
-      return '<span class="status-pill is-unsupported">' + escapeHtml(server.unsupported_reason || 'Не поддерживается') + '</span>';
+      return '<span class="status-pill is-unsupported">' + escapeHtml(server.unsupported_reason || t('unsupported')) + '</span>';
     }
-
     if (server.maybe_unsupported === true) {
-      return '<span class="status-pill is-maybe">' + escapeHtml(server.maybe_unsupported_reason || 'Может не поддерживаться') + '</span>';
+      return '<span class="status-pill is-maybe">' + escapeHtml(server.maybe_unsupported_reason || t('maybe')) + '</span>';
     }
-
-    return '<span class="status-pill">Поддерживается</span>';
+    return '<span class="status-pill">' + escapeHtml(t('supported')) + '</span>';
   }
 
   function renderMeta() {
@@ -174,11 +298,12 @@
     var used = Number(meta.used || ((Number(meta.upload || 0) + Number(meta.download || 0)) || 0));
     var remaining = meta.remaining;
 
+    heroProfile.textContent = profile;
     metaProfile.textContent = profile;
     metaTraffic.textContent = bytesToHuman(used);
     metaExpire.textContent = formatDate(meta.expire);
     metaUpdated.textContent = formatDate(meta.updated_at);
-    metaRemaining.textContent = (remaining == null || remaining === '' || Number(remaining) === 0) ? 'Без лимита' : bytesToHuman(remaining);
+    metaRemaining.textContent = (remaining == null || remaining === '' || Number(remaining) === 0) ? t('unlimited') : bytesToHuman(remaining);
     metaTimeLeft.textContent = formatTimeLeft(meta.expire);
   }
 
@@ -188,7 +313,7 @@
     var unsupported = visible.filter(function (server) { return server.unsupported === true; }).length;
     var previewCount = getPreviewServers().length;
 
-    summaryLine.textContent = 'Поддерживается: ' + supported + ' • В списке: ' + previewCount + ' • Не поддерживается: ' + unsupported;
+    summaryLine.textContent = t('summarySupported') + ': ' + supported + ' • ' + t('summaryInList') + ': ' + previewCount + ' • ' + t('summaryUnsupported') + ': ' + unsupported;
   }
 
   function renderNotice() {
@@ -201,13 +326,11 @@
     if (announce) {
       chunks.push(announce);
     }
-
     notices.forEach(function (notice) {
       if (chunks.indexOf(notice) === -1) {
         chunks.push(notice);
       }
     });
-
     if (error && chunks.indexOf(error) === -1) {
       chunks.push(error);
     }
@@ -226,7 +349,7 @@
     var servers = getVisibleServers();
 
     if (!servers.length) {
-      serversBody.innerHTML = '<tr><td colspan="5" class="empty-row">После успешного парсинга здесь появится список серверов.</td></tr>';
+      serversBody.innerHTML = '<tr><td colspan="5" class="empty-row">' + escapeHtml(t('emptyServers')) + '</td></tr>';
       return;
     }
 
@@ -235,9 +358,9 @@
       '<tr>',
       '<td><div class="cell-primary"><input class="server-radio" type="radio" name="primary-mode" value="auto"' + autoChecked + '></div></td>',
       '<td><div class="cell-enabled">-</div></td>',
-      '<td><div class="cell-server"><div class="server-main">Авто</div></div></td>',
+      '<td><div class="cell-server"><div class="server-main">' + escapeHtml(t('auto')) + '</div><div class="server-sub">' + escapeHtml(t('autoDesc')) + '</div></div></td>',
       '<td><div class="cell-type">URLTEST</div></td>',
-      '<td><div class="cell-status"><span class="status-pill">Превью</span></div></td>',
+      '<td><div class="cell-status"><span class="status-pill">' + escapeHtml(t('preview')) + '</span></div></td>',
       '</tr>'
     ].join('');
 
@@ -249,6 +372,7 @@
 
       var primaryChecked = state.primaryMode === 'manual' && state.primaryId === server.id ? ' checked' : '';
       var enabledChecked = checked ? ' checked' : '';
+
       return [
         '<tr>',
         '<td><div class="cell-primary"><input class="server-radio" data-server-radio="' + escapeHtml(server.id) + '" type="radio" name="primary-mode" value="' + escapeHtml(server.id) + '"' + primaryChecked + (server.unsupported ? ' disabled' : '') + '></div></td>',
@@ -267,17 +391,17 @@
     var previewServers = getPreviewServers();
 
     if (!previewServers.length) {
-      previewList.innerHTML = '<div class="preview-empty">Нет ссылок для показа.</div>';
+      previewList.innerHTML = '<div class="preview-empty">' + escapeHtml(t('noLinks')) + '</div>';
       return;
     }
 
     previewList.innerHTML = previewServers.map(function (server) {
       var flags = [];
       if (state.primaryMode === 'manual' && state.primaryId === server.id) {
-        flags.push('Выбран вручную');
+        flags.push(t('manual'));
       }
       if (server.maybe_unsupported === true) {
-        flags.push('WS выключен по умолчанию');
+        flags.push(t('wsDisabled'));
       }
 
       return [
@@ -287,7 +411,7 @@
         '<div class="preview-item-name">' + escapeHtml(normalizeDisplayName(server.name)) + '</div>',
         '<div class="preview-item-type">' + escapeHtml(flags.join(' • ') || (server.type_label || '-')) + '</div>',
         '</div>',
-        '<button class="btn btn-secondary btn-small" type="button" data-copy-link="' + escapeHtml(server.id) + '">Копировать</button>',
+        '<button class="btn btn-secondary btn-small" type="button" data-copy-link="' + escapeHtml(server.id) + '">' + escapeHtml(t('copyOne')) + '</button>',
         '</div>',
         '<pre class="preview-link">' + escapeHtml(server.url || server.link || '') + '</pre>',
         '</article>'
@@ -310,16 +434,17 @@
     state.primaryId = '';
 
     metaProfile.textContent = '-';
+    heroProfile.textContent = '-';
     metaTraffic.textContent = '0 B';
     metaExpire.textContent = '-';
     metaUpdated.textContent = '-';
-    metaRemaining.textContent = 'Без лимита';
+    metaRemaining.textContent = t('unlimited');
     metaTimeLeft.textContent = '-';
-    summaryLine.textContent = 'Поддерживается: 0 • В списке: 0 • Не поддерживается: 0';
+    summaryLine.textContent = t('summarySupported') + ': 0 • ' + t('summaryInList') + ': 0 • ' + t('summaryUnsupported') + ': 0';
     noticeBox.classList.add('is-hidden');
     noticeBox.textContent = '';
-    serversBody.innerHTML = '<tr><td colspan="5" class="empty-row">Здесь появятся серверы после разбора подписки.</td></tr>';
-    previewList.innerHTML = '<div class="preview-empty">Пока нечего показывать.</div>';
+    serversBody.innerHTML = '<tr><td colspan="5" class="empty-row">' + escapeHtml(t('emptyInitial')) + '</td></tr>';
+    previewList.innerHTML = '<div class="preview-empty">' + escapeHtml(t('nothingYet')) + '</div>';
   }
 
   function applyParsedState(status) {
@@ -356,14 +481,14 @@
 
   function copyText(value, successText) {
     if (!value) {
-      setStatus('Нечего копировать.', true);
+      setStatus(t('nothingToCopy'), true);
       return;
     }
 
     navigator.clipboard.writeText(value).then(function () {
       setStatus(successText, false);
     }).catch(function () {
-      setStatus('Не удалось скопировать.', true);
+      setStatus(t('copyFailed'), true);
     });
   }
 
@@ -375,18 +500,18 @@
 
     var url = (input.value || '').trim();
     if (!url) {
-      setStatus('Вставьте ссылку подписки.', true);
+      setStatus(t('needUrl'), true);
       return;
     }
 
     setBusy(true);
-    setStatus('Разбираем подписку...', false);
+    setStatus(t('parsing'), false);
     resetState();
 
     parseSubscription(url).then(function (payload) {
       var status = normalizeRawResponse(payload);
       if (!status) {
-        throw new Error('Сервер не вернул ожидаемый ответ.');
+        throw new Error(t('badResponse'));
       }
 
       applyParsedState(status);
@@ -394,7 +519,7 @@
       if (status.subscription_error && status.subscription_error.message) {
         setStatus(status.subscription_error.message, true);
       } else {
-        setStatus('Подписка успешно разобрана.', false);
+        setStatus(t('parseOk'), false);
       }
     }).catch(function (error) {
       setStatus(String(error && error.message || error), true);
@@ -406,14 +531,14 @@
   clearButton.addEventListener('click', function () {
     input.value = '';
     resetState();
-    setStatus('Готово к проверке.', false);
+    setStatus(t('ready'), false);
   });
 
   copyAllButton.addEventListener('click', function () {
     var links = getPreviewServers().map(function (server) {
       return server.url || server.link || '';
     }).filter(Boolean);
-    copyText(links.join('\n'), 'Все ссылки скопированы.');
+    copyText(links.join('\n'), t('copiedAll'));
   });
 
   tabs.forEach(function (tab) {
@@ -425,6 +550,18 @@
       tabContents.forEach(function (content) {
         content.classList.toggle('is-active', content.getAttribute('data-tab-content') === value);
       });
+    });
+  });
+
+  langButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      state.lang = button.getAttribute('data-lang') || 'ru';
+      applyLanguage();
+      renderAll();
+      setBusy(state.busy);
+      if (!state.busy && !state.raw) {
+        setStatus(t('ready'), false);
+      }
     });
   });
 
@@ -477,8 +614,10 @@
       return;
     }
 
-    copyText(server.url || server.link || '', 'Ссылка скопирована.');
+    copyText(server.url || server.link || '', t('copiedOne'));
   });
 
+  applyLanguage();
   resetState();
+  setStatus(t('ready'), false);
 })();
