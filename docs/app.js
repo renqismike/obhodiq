@@ -188,7 +188,7 @@
     var unsupported = visible.filter(function (server) { return server.unsupported === true; }).length;
     var previewCount = getPreviewServers().length;
 
-    summaryLine.textContent = 'Поддерживается: ' + supported + ' • Ссылок для Podkop: ' + previewCount + ' • Не поддерживается: ' + unsupported;
+    summaryLine.textContent = 'Поддерживается: ' + supported + ' • В списке: ' + previewCount + ' • Не поддерживается: ' + unsupported;
   }
 
   function renderNotice() {
@@ -233,11 +233,11 @@
     var autoChecked = state.primaryMode === 'auto' ? ' checked' : '';
     var autoRow = [
       '<tr>',
-      '<td class="radio-wrap"><input class="server-radio" type="radio" name="primary-mode" value="auto"' + autoChecked + '></td>',
-      '<td class="toggle-wrap">-</td>',
-      '<td><div class="server-main">Авто</div><div class="server-sub">Локальный предпросмотр URLTest-группы</div></td>',
-      '<td>URLTEST</td>',
-      '<td><span class="status-pill">Превью</span></td>',
+      '<td><div class="cell-primary"><input class="server-radio" type="radio" name="primary-mode" value="auto"' + autoChecked + '></div></td>',
+      '<td><div class="cell-enabled">-</div></td>',
+      '<td><div class="cell-server"><div class="server-main">Авто</div></div></td>',
+      '<td><div class="cell-type">URLTEST</div></td>',
+      '<td><div class="cell-status"><span class="status-pill">Превью</span></div></td>',
       '</tr>'
     ].join('');
 
@@ -249,25 +249,13 @@
 
       var primaryChecked = state.primaryMode === 'manual' && state.primaryId === server.id ? ' checked' : '';
       var enabledChecked = checked ? ' checked' : '';
-      var secondary = [];
-
-      if (server.unsupported === true) {
-        secondary.push(server.unsupported_reason || 'Не поддерживается');
-      } else if (server.maybe_unsupported === true) {
-        secondary.push('По умолчанию выключен');
-      } else if (!checked) {
-        secondary.push('Выключен в превью');
-      } else {
-        secondary.push('Будет показан в Podkop Preview');
-      }
-
       return [
         '<tr>',
-        '<td class="radio-wrap"><input class="server-radio" data-server-radio="' + escapeHtml(server.id) + '" type="radio" name="primary-mode" value="' + escapeHtml(server.id) + '"' + primaryChecked + (server.unsupported ? ' disabled' : '') + '></td>',
-        '<td class="toggle-wrap"><input class="server-toggle" data-server-toggle="' + escapeHtml(server.id) + '" type="checkbox"' + enabledChecked + (server.unsupported ? ' disabled' : '') + '></td>',
-        '<td><div class="server-main">' + escapeHtml(normalizeDisplayName(server.name)) + '</div><div class="server-sub">' + escapeHtml(secondary.join(' • ')) + '</div></td>',
-        '<td>' + escapeHtml(server.type_label || '-') + '</td>',
-        '<td>' + buildStatusText(server) + '</td>',
+        '<td><div class="cell-primary"><input class="server-radio" data-server-radio="' + escapeHtml(server.id) + '" type="radio" name="primary-mode" value="' + escapeHtml(server.id) + '"' + primaryChecked + (server.unsupported ? ' disabled' : '') + '></div></td>',
+        '<td><div class="cell-enabled"><input class="server-toggle" data-server-toggle="' + escapeHtml(server.id) + '" type="checkbox"' + enabledChecked + (server.unsupported ? ' disabled' : '') + '></div></td>',
+        '<td><div class="cell-server"><div class="server-main">' + escapeHtml(normalizeDisplayName(server.name)) + '</div></div></td>',
+        '<td><div class="cell-type">' + escapeHtml(server.type_label || '-') + '</div></td>',
+        '<td><div class="cell-status">' + buildStatusText(server) + '</div></td>',
         '</tr>'
       ].join('');
     });
@@ -279,7 +267,7 @@
     var previewServers = getPreviewServers();
 
     if (!previewServers.length) {
-      previewList.innerHTML = '<div class="preview-empty">Нет серверов для предпросмотра.</div>';
+      previewList.innerHTML = '<div class="preview-empty">Нет ссылок для показа.</div>';
       return;
     }
 
@@ -289,7 +277,7 @@
         flags.push('Выбран вручную');
       }
       if (server.maybe_unsupported === true) {
-        flags.push('WS по умолчанию выключен');
+        flags.push('WS выключен по умолчанию');
       }
 
       return [
@@ -327,7 +315,7 @@
     metaUpdated.textContent = '-';
     metaRemaining.textContent = 'Без лимита';
     metaTimeLeft.textContent = '-';
-    summaryLine.textContent = 'Поддерживается: 0 • Ссылок для Podkop: 0 • Не поддерживается: 0';
+    summaryLine.textContent = 'Поддерживается: 0 • В списке: 0 • Не поддерживается: 0';
     noticeBox.classList.add('is-hidden');
     noticeBox.textContent = '';
     serversBody.innerHTML = '<tr><td colspan="5" class="empty-row">Здесь появятся серверы после разбора подписки.</td></tr>';

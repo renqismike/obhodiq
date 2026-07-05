@@ -262,15 +262,15 @@ body {
 }
 
 .servers-table col.col-server {
-  width: 42%;
+  width: 50%;
 }
 
 .servers-table col.col-type {
-  width: 30%;
+  width: 24%;
 }
 
 .servers-table col.col-status {
-  width: 160px;
+  width: 150px;
 }
 
 .servers-table thead {
@@ -317,7 +317,9 @@ body {
 
 .server-main {
   font-weight: 800;
-  word-break: break-word;
+  line-height: 1.35;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .server-sub {
@@ -339,6 +341,11 @@ body {
 .cell-type,
 .cell-status {
   min-height: 56px;
+}
+
+.cell-server {
+  display: flex;
+  align-items: flex-start;
 }
 
 .cell-type {
@@ -475,11 +482,11 @@ body {
   }
 
   .servers-table col.col-server {
-    width: 320px;
+    width: 380px;
   }
 
   .servers-table col.col-type {
-    width: 240px;
+    width: 220px;
   }
 }
 
