@@ -117,6 +117,8 @@
   };
 
   function resolveApiBase() {
+    var host = (window.location && window.location.hostname) || '';
+
     try {
       var params = new URLSearchParams(window.location.search || '');
       var override = (params.get('api') || '').trim();
@@ -132,6 +134,15 @@
       // ignore
     }
 
+    if (host === 'renqismike.github.io') {
+      try {
+        window.localStorage.setItem('obhodiq-demo-api', 'https://anonchattapps.duckdns.org/obhodiq-api');
+      } catch (storageError) {
+        // ignore
+      }
+      return 'https://anonchattapps.duckdns.org/obhodiq-api';
+    }
+
     try {
       var savedApiBase = (window.localStorage.getItem('obhodiq-demo-api') || '').trim();
       if (savedApiBase) {
@@ -139,11 +150,6 @@
       }
     } catch (storageError) {
       // ignore
-    }
-
-    var host = (window.location && window.location.hostname) || '';
-    if (host === 'renqismike.github.io') {
-      return 'https://anonchattapps.duckdns.org/obhodiq-api';
     }
 
     return (window.location.origin || '').replace(/\/$/, '') + '/obhodiq-api';
