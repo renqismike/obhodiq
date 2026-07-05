@@ -135,7 +135,10 @@
     primaryMode: 'auto',
     primaryId: '',
     busy: false,
-    lang: 'ru'
+    lang: 'ru',
+    statusKey: 'ready',
+    statusText: '',
+    statusError: false
   };
 
   var form = document.getElementById('parse-form');
@@ -178,6 +181,7 @@
     if (!state.raw) {
       metaRemaining.textContent = t('unlimited');
     }
+    syncStatus();
   }
 
   function setBusy(isBusy, label) {
@@ -186,9 +190,24 @@
     parseButton.textContent = isBusy ? (label || t('parseButtonBusy')) : t('parseButton');
   }
 
-  function setStatus(message, isError) {
-    statusBar.textContent = message || '';
-    statusBar.classList.toggle('is-error', !!isError);
+  function syncStatus() {
+    var message = state.statusKey ? t(state.statusKey) : (state.statusText || '');
+    statusBar.textContent = message;
+    statusBar.classList.toggle('is-error', !!state.statusError);
+  }
+
+  function setStatusKey(key, isError) {
+    state.statusKey = key || '';
+    state.statusText = '';
+    state.statusError = !!isError;
+    syncStatus();
+  }
+
+  function setStatusText(message, isError) {
+    state.statusKey = '';
+    state.statusText = message || '';
+    state.statusError = !!isError;
+    syncStatus();
   }
 
   function escapeHtml(value) {
@@ -481,14 +500,14 @@
 
   function copyText(value, successText) {
     if (!value) {
-      setStatus(t('nothingToCopy'), true);
+      setStatusKey('nothingToCopy', true);
       return;
     }
 
     navigator.clipboard.writeText(value).then(function () {
-      setStatus(successText, false);
+      setStatusText(successText, false);
     }).catch(function () {
-      setStatus(t('copyFailed'), true);
+      setStatusKey('copyFailed', true);
     });
   }
 
@@ -500,12 +519,12 @@
 
     var url = (input.value || '').trim();
     if (!url) {
-      setStatus(t('needUrl'), true);
+      setStatusKey('needUrl', true);
       return;
     }
 
     setBusy(true);
-    setStatus(t('parsing'), false);
+    setStatusKey('parsing', false);
     resetState();
 
     parseSubscription(url).then(function (payload) {
@@ -517,12 +536,12 @@
       applyParsedState(status);
 
       if (status.subscription_error && status.subscription_error.message) {
-        setStatus(status.subscription_error.message, true);
+        setStatusText(status.subscription_error.message, true);
       } else {
-        setStatus(t('parseOk'), false);
+        setStatusKey('parseOk', false);
       }
     }).catch(function (error) {
-      setStatus(String(error && error.message || error), true);
+      setStatusText(String(error && error.message || error), true);
     }).finally(function () {
       setBusy(false);
     });
@@ -531,7 +550,7 @@
   clearButton.addEventListener('click', function () {
     input.value = '';
     resetState();
-    setStatus(t('ready'), false);
+    setStatusKey('ready', false);
   });
 
   copyAllButton.addEventListener('click', function () {
@@ -556,12 +575,14 @@
   langButtons.forEach(function (button) {
     button.addEventListener('click', function () {
       state.lang = button.getAttribute('data-lang') || 'ru';
+      try {
+        window.localStorage.setItem('obhodiq-demo-lang', state.lang);
+      } catch (error) {
+        // ignore
+      }
       applyLanguage();
       renderAll();
       setBusy(state.busy);
-      if (!state.busy && !state.raw) {
-        setStatus(t('ready'), false);
-      }
     });
   });
 
@@ -617,7 +638,16 @@
     copyText(server.url || server.link || '', t('copiedOne'));
   });
 
+  try {
+    var savedLang = window.localStorage.getItem('obhodiq-demo-lang');
+    if (savedLang === 'ru' || savedLang === 'en') {
+      state.lang = savedLang;
+    }
+  } catch (error) {
+    // ignore
+  }
+
   applyLanguage();
   resetState();
-  setStatus(t('ready'), false);
+  setStatusKey('ready', false);
 })();
