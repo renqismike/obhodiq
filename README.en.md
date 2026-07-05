@@ -22,6 +22,13 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 > Obhodiq is currently in **beta**. It is already usable, but different providers, subscription styles, and individual servers may behave differently.
 
 > [!NOTE]
+> A quick parsing demo is available here:
+> [renqismike.github.io/obhodiq](https://renqismike.github.io/obhodiq/)
+>
+> URLs entered there are **not stored in a database**.
+> However, your VPN provider **may still count such a request as a new device or a new session**.
+
+> [!NOTE]
 > The project is intended for **technical subscription processing and Podkop configuration management on OpenWrt**.
 >
 > Obhodiq itself:
