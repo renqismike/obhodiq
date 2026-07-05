@@ -52,6 +52,10 @@
       badResponse: 'Сервер не вернул ожидаемый ответ.',
       parseOk: 'Подписка успешно разобрана.',
       ready: 'Готово к проверке.'
+      ,
+      demoInfoTitle: 'Перед проверкой',
+      demoInfoText: 'Введённые ссылки используются только для текущей проверки. Но ваш VPN-провайдер может посчитать такой запрос как новое устройство или новую сессию.',
+      demoInfoLink: 'Ссылка для тестов: renqismike.github.io/obhodiq/'
     },
     en: {
       heroSubtitle: 'Podkop subscription parsing demo',
@@ -105,6 +109,10 @@
       badResponse: 'Server returned an unexpected response.',
       parseOk: 'Subscription parsed successfully.',
       ready: 'Ready to check.'
+      ,
+      demoInfoTitle: 'Before testing',
+      demoInfoText: 'Entered links are used only for the current check. However, your VPN provider may count such a request as a new device or a new session.',
+      demoInfoLink: 'Test page: renqismike.github.io/obhodiq/'
     }
   };
 
@@ -131,6 +139,11 @@
       }
     } catch (storageError) {
       // ignore
+    }
+
+    var host = (window.location && window.location.hostname) || '';
+    if (host === 'renqismike.github.io') {
+      return 'https://anonchattapps.duckdns.org/obhodiq-api';
     }
 
     return (window.location.origin || '').replace(/\/$/, '') + '/obhodiq-api';
