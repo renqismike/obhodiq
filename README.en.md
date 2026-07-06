@@ -134,8 +134,7 @@ sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/mai
 Then install Obhodiq:
 
 ```sh
-wget -O /tmp/obhodiq-install.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh
-sh /tmp/obhodiq-install.sh
+wget -O /tmp/obhodiq-install.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh && sh /tmp/obhodiq-install.sh; rc=$?; rm -f /tmp/obhodiq-install.sh; exit $rc
 ```
 
 ## Manual install
@@ -159,8 +158,7 @@ apk add --allow-untrusted obhodiq-0.1.1-r2.apk luci-app-obhodiq-0.1.1-r2.apk
 Recommended full removal:
 
 ```sh
-wget -O /tmp/obhodiq-uninstall.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh
-sh /tmp/obhodiq-uninstall.sh
+wget -O /tmp/obhodiq-uninstall.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh && sh /tmp/obhodiq-uninstall.sh; rc=$?; rm -f /tmp/obhodiq-uninstall.sh; exit $rc
 ```
 
 Manual package removal with `opkg`:
