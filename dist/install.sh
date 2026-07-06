@@ -5,7 +5,7 @@ set -eu
 APP_NAME="Obhodiq"
 APP_PKG="obhodiq"
 LUCI_PKG="luci-app-obhodiq"
-OBHODIQ_VERSION="${OBHODIQ_VERSION:-0.1.1-r1}"
+OBHODIQ_VERSION="${OBHODIQ_VERSION:-0.1.1-r2}"
 RELEASE_BASE_URL="${RELEASE_BASE_URL:-https://raw.githubusercontent.com/renqismike/obhodiq/main/dist}"
 TMP_DIR="${TMPDIR:-/tmp}/obhodiq-install"
 

@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=obhodiq
 PKG_VERSION:=0.1.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=Local
 PKG_LICENSE:=GPL-2.0-or-later
@@ -63,6 +63,16 @@ define Package/obhodiq/prerm
 /usr/bin/obhodiq set-update-schedule never >/dev/null 2>&1 || true
 /etc/init.d/obhodiq stop >/dev/null 2>&1 || true
 /etc/init.d/obhodiq disable >/dev/null 2>&1 || true
+if [ -f /etc/crontabs/root ]; then
+	tmp_file="$$(mktemp)"
+	awk -v begin="# BEGIN PODKOP-SUB-MANAGER" -v end="# END PODKOP-SUB-MANAGER" '\
+		$$0 == begin { skip = 1; next } \
+		$$0 == end { skip = 0; next } \
+		skip != 1 { print } \
+	' /etc/crontabs/root > "$$tmp_file"
+	mv "$$tmp_file" /etc/crontabs/root
+	/etc/init.d/cron restart >/dev/null 2>&1 || /etc/init.d/cron reload >/dev/null 2>&1 || true
+fi
 exit 0
 endef
 
@@ -70,7 +80,7 @@ define Package/obhodiq/postrm
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] && exit 0
 rm -rf /etc/obhodiq /var/run/obhodiq
-rm -f /tmp/obhodiq-auto-update.log
+rm -f /tmp/obhodiq-auto-update.log /tmp/obhodiq-ping-refresh.log /tmp/obhodiq*.ipk /tmp/obhodiq*.apk
 rm -f /etc/config/obhodiq /etc/init.d/obhodiq /usr/bin/obhodiq /www/cgi-bin/obhodiq
 rm -rf /usr/lib/obhodiq
 exit 0

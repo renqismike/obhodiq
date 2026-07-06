@@ -619,8 +619,16 @@ fetch_subscription() {
 
   tmp_body="$(mktemp)"
   tmp_headers="$(mktemp)"
+  tmp_error="$(mktemp)"
   device_id="$(get_client_device_id)"
-  if ! curl -fsSL \
+
+  curl_exit=0
+  if curl -fsSL \
+    --connect-timeout 20 \
+    --max-time 120 \
+    --retry 2 \
+    --retry-delay 1 \
+    --compressed \
     -A 'Happ/1.0' \
     -H 'Accept: */*' \
     -H 'User-Agent: Happ/1.0' \
@@ -630,15 +638,52 @@ fetch_subscription() {
     -H "Hwid: ${device_id}" \
     -D "$tmp_headers" \
     "$url" \
-    -o "$tmp_body"; then
-    rm -f "$tmp_body" "$tmp_headers"
-    log_msg "failed to fetch subscription"
-    set_subscription_error "Ошибка подписки: не удалось загрузить ссылку"
+    -o "$tmp_body" \
+    2>"$tmp_error"; then
+    curl_exit=0
+  else
+    curl_exit="$?"
+    : > "$tmp_body"
+    : > "$tmp_headers"
+    if curl -fsSLk \
+      --http1.1 \
+      --connect-timeout 20 \
+      --max-time 120 \
+      --retry 1 \
+      --retry-delay 1 \
+      --compressed \
+      -A 'Happ/1.0' \
+      -H 'Accept: */*' \
+      -H 'User-Agent: Happ/1.0' \
+      -H "X-Hwid: ${device_id}" \
+      -H "X-Device-Id: ${device_id}" \
+      -H "Device-Id: ${device_id}" \
+      -H "Hwid: ${device_id}" \
+      -D "$tmp_headers" \
+      "$url" \
+      -o "$tmp_body" \
+      2>"$tmp_error"; then
+      curl_exit=0
+    else
+      curl_exit="$?"
+    fi
+  fi
+
+  if [ "${curl_exit:-0}" -ne 0 ] 2>/dev/null; then
+    error_line="$(tr '\r\n' ' ' < "$tmp_error" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//' | cut -c1-220)"
+    rm -f "$tmp_body" "$tmp_headers" "$tmp_error"
+    log_msg "failed to fetch subscription: curl_exit=$curl_exit ${error_line:-unknown}"
+    if [ -n "${error_line:-}" ]; then
+      set_subscription_error "Ошибка подписки: не удалось загрузить ссылку (curl ${curl_exit}: ${error_line})"
+    else
+      set_subscription_error "Ошибка подписки: не удалось загрузить ссылку (curl ${curl_exit})"
+    fi
     return 1
   fi
 
   mv "$tmp_body" "$RAW_FILE"
   mv "$tmp_headers" "$HEADER_FILE"
+  rm -f "$tmp_error"
   clear_subscription_error
   log_msg "subscription fetched"
 }
@@ -1119,10 +1164,6 @@ EOF
     printf "        list urltest_proxy_links '%s'\n" "$link" >> "$PODKOP_UCI_SNIPPET_FILE"
   done
 
-  if [ -n "${podkop_node:-}" ]; then
-    printf "config config 'config'\n        option node '%s'\n" "$podkop_node" >> "$PODKOP_UCI_SNIPPET_FILE"
-  fi
-
   cat > "$PODKOP_APPLY_FILE" <<EOF
 #!/bin/sh
 set -eu
@@ -1136,13 +1177,6 @@ EOF
     [ -n "$link" ] || continue
     printf "uci -q add_list podkop.%s.urltest_proxy_links='%s'\n" "$section_name" "$link" >> "$PODKOP_APPLY_FILE"
   done
-
-  if [ -n "${podkop_node:-}" ]; then
-    cat >> "$PODKOP_APPLY_FILE" <<EOF
-uci -q set podkop.config=config || true
-uci -q set podkop.config.node='${podkop_node}' || true
-EOF
-  fi
 
   cat >> "$PODKOP_APPLY_FILE" <<'EOF'
 uci -q commit podkop
@@ -1212,12 +1246,6 @@ apply_podkop_config() {
       [ -n "$link" ] || continue
       "$UCI_BIN" -q add_list "podkop.${section_name}.urltest_proxy_links=${link}"
     done
-    if [ -n "${podkop_node:-}" ]; then
-      "$UCI_BIN" -q set "podkop.config=config" >/dev/null 2>&1 || true
-      "$UCI_BIN" -q set "podkop.config.node=${podkop_node}" >/dev/null 2>&1 || true
-    else
-      "$UCI_BIN" -q delete "podkop.config.node" >/dev/null 2>&1 || true
-    fi
     "$UCI_BIN" -q commit podkop
 
     if has_podkop_service; then

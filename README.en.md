@@ -21,7 +21,7 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 > A quick parsing demo is available here:
 > [renqismike.github.io/obhodiq](https://renqismike.github.io/obhodiq/)
 >
-> URLs entered there are **not stored in a database**.
+> URLs entered there are used only for the current check.
 > However, your VPN provider **may still count such a request as a new device or a new session**.
 
 > [!NOTE]
@@ -134,7 +134,8 @@ sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/mai
 Then install Obhodiq:
 
 ```sh
-sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh)
+wget -O /tmp/obhodiq-install.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh
+sh /tmp/obhodiq-install.sh
 ```
 
 ## Manual install
@@ -144,38 +145,43 @@ If you prefer manual installation, use the package files from the release assets
 For OpenWrt with `opkg`:
 
 ```sh
-opkg install obhodiq_0.1.1-r1_all.ipk luci-app-obhodiq_0.1.1-r1_all.ipk
+opkg install obhodiq_0.1.1-r2_all.ipk luci-app-obhodiq_0.1.1-r2_all.ipk
 ```
 
 For OpenWrt with `apk`:
 
 ```sh
-apk add --allow-untrusted obhodiq-0.1.1-r1.apk luci-app-obhodiq-0.1.1-r1.apk
+apk add --allow-untrusted obhodiq-0.1.1-r2.apk luci-app-obhodiq-0.1.1-r2.apk
 ```
 
 ## Remove
 
-Full removal:
+Recommended full removal:
 
 ```sh
-sh uninstall.sh
+wget -O /tmp/obhodiq-uninstall.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh
+sh /tmp/obhodiq-uninstall.sh
 ```
 
-Or manually with `opkg`:
+Manual package removal with `opkg`:
 
 ```sh
 opkg remove luci-app-obhodiq
 opkg remove obhodiq
 ```
 
-Or manually with `apk`:
+Manual package removal with `apk`:
 
 ```sh
 apk del luci-app-obhodiq
 apk del obhodiq
 ```
 
-`uninstall.sh` also removes the saved subscription URL. Obhodiq is intended to be removable without removing or breaking Podkop itself.
+Important:
+
+- the `obhodiq-uninstall.sh` method is the main recommended one, because it explicitly uses the official uninstall script from the repository
+- manual removal through `opkg` or `apk` should also clean up Obhodiq leftovers correctly when the current package version is installed
+- removing Obhodiq is intended not to remove or break Podkop itself
 
 ## Interface
 
@@ -196,6 +202,22 @@ Server list:
 - the radio button switches between auto mode and a manual server
 - the checkbox enables or excludes a server from export
 - `Ping` shows the value returned by Podkop
+
+### How subscription auto-update works
+
+Auto-update uses cron scheduling, not "time since you selected it".
+
+Current schedule:
+
+- `30 minutes` — at minute `00` and `30` of every hour
+- `1 hour` — at the start of every hour
+- `3 hours` — at `00:00`, `03:00`, `06:00`, `09:00`, `12:00`, `15:00`, `18:00`, `21:00`
+- `6 hours` — at `00:00`, `06:00`, `12:00`, `18:00`
+- `12 hours` — at `00:00` and `12:00`
+- `24 hours` — every day at `03:00`
+- `Never` — disabled
+
+If Obhodiq is turned off with the power button, scheduled auto-update does not run.
 
 ## Important behavior
 

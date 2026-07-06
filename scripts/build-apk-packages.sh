@@ -5,7 +5,7 @@ set -eu
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="${2:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 SDK_ROOT="${1:-${OPENWRT_APK_SDK_ROOT:-}}"
-VERSION="${3:-0.1.1-r1}"
+VERSION="${3:-0.1.1-r2}"
 DIST_DIR="$PROJECT_ROOT/dist"
 WORK_DIR="$SDK_ROOT/tmp/obhodiq-apk-build"
 APK_BIN="$SDK_ROOT/staging_dir/host/bin/apk"
@@ -67,13 +67,23 @@ cat >"$BACKEND_SCRIPTS/pre-deinstall" <<'EOF'
 /usr/bin/obhodiq set-update-schedule never >/dev/null 2>&1 || true
 /etc/init.d/obhodiq stop >/dev/null 2>&1 || true
 /etc/init.d/obhodiq disable >/dev/null 2>&1 || true
+if [ -f /etc/crontabs/root ]; then
+  tmp_file="$(mktemp)"
+  awk -v begin="# BEGIN PODKOP-SUB-MANAGER" -v end="# END PODKOP-SUB-MANAGER" '
+    $0 == begin { skip = 1; next }
+    $0 == end { skip = 0; next }
+    skip != 1 { print }
+  ' /etc/crontabs/root > "$tmp_file"
+  mv "$tmp_file" /etc/crontabs/root
+  /etc/init.d/cron restart >/dev/null 2>&1 || /etc/init.d/cron reload >/dev/null 2>&1 || true
+fi
 exit 0
 EOF
 
 cat >"$BACKEND_SCRIPTS/post-deinstall" <<'EOF'
 #!/bin/sh
 rm -rf /etc/obhodiq /var/run/obhodiq
-rm -f /tmp/obhodiq-auto-update.log /tmp/obhodiq-ping-refresh.log
+rm -f /tmp/obhodiq-auto-update.log /tmp/obhodiq-ping-refresh.log /tmp/obhodiq*.ipk /tmp/obhodiq*.apk
 rm -f /etc/config/obhodiq /etc/init.d/obhodiq /usr/bin/obhodiq /www/cgi-bin/obhodiq
 rm -rf /usr/lib/obhodiq
 exit 0

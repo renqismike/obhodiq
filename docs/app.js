@@ -126,15 +126,6 @@
       // ignore
     }
 
-    if (host === 'renqismike.github.io') {
-      try {
-        window.localStorage.setItem('obhodiq-demo-api', 'https://anonchattapps.duckdns.org/obhodiq-api');
-      } catch (storageError) {
-        // ignore
-      }
-      return 'https://anonchattapps.duckdns.org/obhodiq-api';
-    }
-
     try {
       var savedApiBase = (window.localStorage.getItem('obhodiq-demo-api') || '').trim();
       if (savedApiBase) {

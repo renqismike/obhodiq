@@ -14,7 +14,7 @@ Obhodiq — это дополнение для [Podkop](https://github.com/itdog
 
 Что важно:
 
-- введённые на этой странице ссылки используются только для текущей проверки и у нас не сохраняются
+- введённые на этой странице ссылки используются только для текущей проверки
 - сам факт обращения к подписке ваш VPN-провайдер может посчитать как новое устройство или новую сессию
 
 > [!IMPORTANT]
@@ -148,7 +148,8 @@ sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/mai
 Потом установи Obhodiq:
 
 ```sh
-sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh)
+wget -O /tmp/obhodiq-install.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh
+sh /tmp/obhodiq-install.sh
 ```
 
 ## Ручная установка
@@ -158,38 +159,43 @@ sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install
 Для OpenWrt с `opkg`:
 
 ```sh
-opkg install obhodiq_0.1.1-r1_all.ipk luci-app-obhodiq_0.1.1-r1_all.ipk
+opkg install obhodiq_0.1.1-r2_all.ipk luci-app-obhodiq_0.1.1-r2_all.ipk
 ```
 
 Для OpenWrt с `apk`:
 
 ```sh
-apk add --allow-untrusted obhodiq-0.1.1-r1.apk luci-app-obhodiq-0.1.1-r1.apk
+apk add --allow-untrusted obhodiq-0.1.1-r2.apk luci-app-obhodiq-0.1.1-r2.apk
 ```
 
 ## Удаление
 
-Полное удаление:
+Рекомендуемое полное удаление:
 
 ```sh
-sh uninstall.sh
+wget -O /tmp/obhodiq-uninstall.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh
+sh /tmp/obhodiq-uninstall.sh
 ```
 
-Или вручную через `opkg`:
+Ручное удаление пакетов через `opkg`:
 
 ```sh
 opkg remove luci-app-obhodiq
 opkg remove obhodiq
 ```
 
-Или вручную через `apk`:
+Ручное удаление пакетов через `apk`:
 
 ```sh
 apk del luci-app-obhodiq
 apk del obhodiq
 ```
 
-`uninstall.sh` дополнительно очищает сохранённую ссылку подписки. При этом Obhodiq должен удаляться без удаления и поломки самого Podkop.
+Важно:
+
+- вариант через `obhodiq-uninstall.sh` — основной и рекомендуемый, потому что он явно использует официальный файл удаления из репозитория
+- ручное удаление через `opkg` или `apk` тоже должно корректно вычищать хвосты Obhodiq, если установлена актуальная версия пакета
+- удаление Obhodiq не должно удалять и ломать сам Podkop
 
 ## Интерфейс
 
@@ -210,6 +216,22 @@ apk del obhodiq
 - радиокнопка переключает между авто-режимом и ручным сервером
 - галочка включает или исключает сервер из экспорта
 - `Пинг` показывает значение, которое вернул Podkop
+
+### Как работает автообновление
+
+Автообновление работает по расписанию cron, а не от момента, когда ты выбрал значение в списке.
+
+Текущее расписание такое:
+
+- `30 минут` — в `00` и `30` минут каждого часа
+- `1 час` — в начале каждого часа
+- `3 часа` — в `00:00`, `03:00`, `06:00`, `09:00`, `12:00`, `15:00`, `18:00`, `21:00`
+- `6 часов` — в `00:00`, `06:00`, `12:00`, `18:00`
+- `12 часов` — в `00:00` и `12:00`
+- `24 часа` — каждый день в `03:00`
+- `Никогда` — автообновление отключено
+
+Если Obhodiq выключен кнопкой питания, автообновление тоже не выполняется.
 
 ## Что важно понимать
 

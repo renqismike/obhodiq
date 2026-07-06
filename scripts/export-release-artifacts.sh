@@ -21,6 +21,7 @@ if [ -n "${APK_SDK_ROOT:-}" ]; then
 fi
 
 mkdir -p "$DIST_DIR"
+
 rm -f \
   "$DIST_DIR"/obhodiq_*.ipk \
   "$DIST_DIR"/luci-app-obhodiq_*.ipk \
@@ -29,8 +30,7 @@ rm -f \
 
 [ -d "$PKG_DIR" ] && cp -f "$PKG_DIR"/obhodiq_*.ipk "$DIST_DIR"/ 2>/dev/null || true
 [ -d "$PKG_DIR" ] && cp -f "$PKG_DIR"/luci-app-obhodiq_*.ipk "$DIST_DIR"/ 2>/dev/null || true
-[ -d "$APK_PKG_DIR" ] && cp -f "$APK_PKG_DIR"/obhodiq-*.apk "$DIST_DIR"/ 2>/dev/null || true
-[ -d "$APK_PKG_DIR" ] && cp -f "$APK_PKG_DIR"/luci-app-obhodiq-*.apk "$DIST_DIR"/ 2>/dev/null || true
+
 cp -f "$PROJECT_ROOT/install.sh" "$DIST_DIR"/install.sh
 cp -f "$PROJECT_ROOT/uninstall.sh" "$DIST_DIR"/uninstall.sh
 cp -f "$PROJECT_ROOT/RELEASE.md" "$DIST_DIR"/RELEASE.md

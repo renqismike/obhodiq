@@ -10,7 +10,7 @@ set "BASE_VERSION=%~1"
 if not defined BASE_VERSION set "BASE_VERSION=0.1.0-r3"
 
 set "NEW_VERSION=%~2"
-if not defined NEW_VERSION set "NEW_VERSION=0.1.1-r1"
+if not defined NEW_VERSION set "NEW_VERSION=0.1.1-r2"
 
 set "INPUT_IPK=%DIST%\obhodiq_%BASE_VERSION%_all.ipk"
 set "OUTPUT_IPK=%DIST%\obhodiq_%NEW_VERSION%_all.ipk"
