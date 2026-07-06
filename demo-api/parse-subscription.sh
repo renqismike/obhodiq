@@ -112,39 +112,42 @@ if sync_podkop_export >/dev/null 2>&1; then
   preview_ok="true"
 fi
 
-status_json="$(print_status)"
-error_json="$(cat "$ERROR_FILE" 2>/dev/null || printf '{}')"
+STATUS_JSON_FILE="$(mktemp)"
+ERROR_JSON_FILE="$(mktemp)"
+
+print_status > "$STATUS_JSON_FILE"
+cat "$ERROR_FILE" 2>/dev/null > "$ERROR_JSON_FILE" || printf '{}' > "$ERROR_JSON_FILE"
 
 jq -n \
   --argjson fetch_ok "$fetch_ok" \
   --argjson parse_ok "$parse_ok" \
   --argjson preview_ok "$preview_ok" \
-  --argjson status "$status_json" \
-  --argjson error "$error_json" \
+  --slurpfile status "$STATUS_JSON_FILE" \
+  --slurpfile error "$ERROR_JSON_FILE" \
   '{
     ok: ($fetch_ok and $parse_ok),
     fetch_ok: $fetch_ok,
     parse_ok: $parse_ok,
     preview_ok: $preview_ok,
     status: {
-      active_server_id: ($status.active_server_id // ""),
-      enabled: ($status.enabled // true),
-      lang: ($status.lang // "ru"),
-      subscription_url: ($status.subscription_url // ""),
-      parsed_source_url: ($status.parsed_source_url // ""),
-      update_schedule: ($status.update_schedule // "never"),
-      selection_mode: ($status.selection_mode // "auto"),
-      configured_active_server_id: ($status.configured_active_server_id // ""),
-      configured_selection_mode: ($status.configured_selection_mode // "auto"),
-      live: ($status.live // {}),
-      subscription_error: ($status.subscription_error // {}),
-      meta: ($status.meta // {}),
-      count: ($status.count // 0),
-      supported_count: ($status.supported_count // 0),
-      unsupported_count: ($status.unsupported_count // 0),
-      enabled_count: ($status.enabled_count // 0),
-      latency_count: ($status.latency_count // 0),
-      servers: ($status.servers // [])
+      active_server_id: (($status[0].active_server_id) // ""),
+      enabled: (($status[0].enabled) // true),
+      lang: (($status[0].lang) // "ru"),
+      subscription_url: (($status[0].subscription_url) // ""),
+      parsed_source_url: (($status[0].parsed_source_url) // ""),
+      update_schedule: (($status[0].update_schedule) // "never"),
+      selection_mode: (($status[0].selection_mode) // "auto"),
+      configured_active_server_id: (($status[0].configured_active_server_id) // ""),
+      configured_selection_mode: (($status[0].configured_selection_mode) // "auto"),
+      live: (($status[0].live) // {}),
+      subscription_error: (($status[0].subscription_error) // {}),
+      meta: (($status[0].meta) // {}),
+      count: (($status[0].count) // 0),
+      supported_count: (($status[0].supported_count) // 0),
+      unsupported_count: (($status[0].unsupported_count) // 0),
+      enabled_count: (($status[0].enabled_count) // 0),
+      latency_count: (($status[0].latency_count) // 0),
+      servers: (($status[0].servers) // [])
     },
-    error: $error
+    error: ($error[0] // {})
   }'
