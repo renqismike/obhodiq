@@ -6,6 +6,22 @@
 
 Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWrt. It is designed for VPN subscription links: Obhodiq takes a subscription URL, parses it, builds a server list, and passes the result to Podkop. Podkop then handles routing, `URLTest`, manual switching, and latency checks.
 
+## Contents
+
+- [What Obhodiq does](#what-obhodiq-does)
+- [How it works](#how-it-works)
+- [Formats the parser can read](#formats-the-parser-can-read)
+- [What this means in practice](#what-this-means-in-practice)
+- [Requirements](#requirements)
+- [Install](#install)
+- [Manual install](#manual-install)
+- [Remove](#remove)
+- [Interface](#interface)
+- [How subscription auto-update works](#how-subscription-auto-update-works)
+- [Important behavior](#important-behavior)
+- [If your subscription does not work](#if-your-subscription-does-not-work)
+- [Testing status](#testing-status)
+
 > [!IMPORTANT]
 > Obhodiq does **not** replace Podkop. It works **only together with** the original Podkop and requires Podkop to be installed first.
 
