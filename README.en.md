@@ -8,6 +8,7 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 
 ## Contents
 
+- [Important](#important)
 - [What Obhodiq does](#what-obhodiq-does)
 - [How it works](#how-it-works)
 - [Formats the parser can read](#formats-the-parser-can-read)
@@ -39,6 +40,8 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 >
 > URLs entered there are used only for the current check.
 > However, your VPN provider **may still count such a request as a new device or a new session**.
+
+## Important
 
 > [!NOTE]
 > The project is intended for **technical subscription processing and Podkop configuration management on OpenWrt**.
