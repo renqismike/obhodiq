@@ -8,11 +8,11 @@
 </head>
 <body>
   <main class="page">
-    <section class="panel hero">
+    <section class="panel app-shell">
       <div class="hero-head">
         <div>
-          <div class="hero-title">Obhodiq</div>
-          <div class="hero-profile" id="hero-profile">-</div>
+          <h1 class="app-title">Obhodiq</h1>
+          <div class="app-profile" id="hero-profile">-</div>
           <p class="hero-subtitle" data-i18n="heroSubtitle">Демо парсинга подписок для Podkop</p>
         </div>
         <div class="hero-actions">
@@ -57,6 +57,15 @@
         </article>
       </div>
 
+      <div id="status-panel" class="status-panel">
+        <div class="status-head">
+          <span id="status-dot" class="status-dot"></span>
+          <strong id="status-title" class="status-title">Готово</strong>
+          <span id="status-badge" class="status-badge">ГОТОВО</span>
+        </div>
+        <div id="status-text" class="status-text">Готово к проверке.</div>
+      </div>
+
       <form id="parse-form" class="form-grid">
         <label class="field">
           <span data-i18n="subscriptionLabel">Ссылка подписки</span>
@@ -69,17 +78,6 @@
         </div>
       </form>
 
-      <div id="status-panel" class="status-panel">
-        <div class="status-head">
-          <span id="status-dot" class="status-dot"></span>
-          <strong id="status-title" class="status-title">Готово</strong>
-          <span id="status-badge" class="status-badge">ГОТОВО</span>
-        </div>
-        <div id="status-text" class="status-text">Готово к проверке.</div>
-      </div>
-    </section>
-
-    <section class="panel tabs-panel">
       <div class="tabs">
         <button class="tab is-active" data-tab="overview" type="button" data-i18n="tabOverview">Обзор</button>
         <button class="tab" data-tab="preview" type="button" data-i18n="tabLinks">Ссылки</button>
