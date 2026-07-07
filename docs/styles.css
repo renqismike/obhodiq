@@ -48,6 +48,13 @@ body {
   align-items: flex-start;
 }
 
+.hero-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
 .hero-actions {
   display: flex;
   align-items: center;
@@ -95,7 +102,7 @@ body {
   display: inline-flex;
   align-items: center;
   min-height: 40px;
-  margin: 0 0 10px;
+  margin: 0;
   padding: 0 14px;
   border-radius: 14px;
   border: 1px solid #31425d;
@@ -112,7 +119,7 @@ body {
   align-items: center;
   max-width: min(100%, 420px);
   min-height: 38px;
-  margin: 0 0 10px;
+  margin: 0;
   padding: 0 14px;
   border-radius: 14px;
   border: 1px solid #31425d;
@@ -675,6 +682,15 @@ body {
 
   .app-profile {
     max-width: 100%;
+  }
+
+  .hero-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions {
+    justify-content: space-between;
   }
 
   .cards {
