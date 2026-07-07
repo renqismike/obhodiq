@@ -11,7 +11,7 @@
     <section class="panel hero">
       <div class="hero-head">
         <div>
-          <h1>Obhodiq</h1>
+          <div class="hero-title">Obhodiq</div>
           <div class="hero-profile" id="hero-profile">-</div>
           <p class="hero-subtitle" data-i18n="heroSubtitle">Демо парсинга подписок для Podkop</p>
         </div>
@@ -69,7 +69,14 @@
         </div>
       </form>
 
-      <div id="status-bar" class="status-bar">Готово к проверке.</div>
+      <div id="status-panel" class="status-panel">
+        <div class="status-head">
+          <span id="status-dot" class="status-dot"></span>
+          <strong id="status-title" class="status-title">Готово</strong>
+          <span id="status-badge" class="status-badge">ГОТОВО</span>
+        </div>
+        <div id="status-text" class="status-text">Готово к проверке.</div>
+      </div>
     </section>
 
     <section class="panel tabs-panel">

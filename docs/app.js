@@ -36,9 +36,10 @@
       preview: 'Превью',
       supported: 'Поддерживается',
       maybe: 'Может не поддерживаться',
+      maybeShort: 'Может не подд.',
       unsupported: 'Не поддерживается',
       manual: 'Выбран вручную',
-      wsDisabled: 'WS выключен по умолчанию',
+      wsDisabled: 'WS добавлен в демо',
       unlimited: 'Без лимита',
       expired: 'Истекло',
       dayShort: 'д.',
@@ -89,9 +90,10 @@
       preview: 'Preview',
       supported: 'Supported',
       maybe: 'May be unsupported',
+      maybeShort: 'May not work',
       unsupported: 'Unsupported',
       manual: 'Selected manually',
-      wsDisabled: 'WS disabled by default',
+      wsDisabled: 'WS included in demo',
       unlimited: 'Unlimited',
       expired: 'Expired',
       dayShort: 'd.',
@@ -157,7 +159,10 @@
   var parseButton = document.getElementById('parse-button');
   var clearButton = document.getElementById('clear-button');
   var copyAllButton = document.getElementById('copy-all-button');
-  var statusBar = document.getElementById('status-bar');
+  var statusPanel = document.getElementById('status-panel');
+  var statusTitleNode = document.getElementById('status-title');
+  var statusTextNode = document.getElementById('status-text');
+  var statusBadgeNode = document.getElementById('status-badge');
   var summaryLine = document.getElementById('summary-line');
   var noticeBox = document.getElementById('notice-box');
   var serversBody = document.getElementById('servers-body');
@@ -203,8 +208,13 @@
 
   function syncStatus() {
     var message = state.statusKey ? t(state.statusKey) : (state.statusText || '');
-    statusBar.textContent = message;
-    statusBar.classList.toggle('is-error', !!state.statusError);
+    var title = state.statusError ? (state.lang === 'ru' ? 'Ошибка' : 'Error') : (state.busy ? (state.lang === 'ru' ? 'Загрузка' : 'Loading') : (state.lang === 'ru' ? 'Готово' : 'Ready'));
+    var badge = state.statusError ? (state.lang === 'ru' ? 'ОШИБКА' : 'ERROR') : (state.busy ? (state.lang === 'ru' ? 'ЗАГРУЗКА' : 'LOADING') : (state.lang === 'ru' ? 'ГОТОВО' : 'READY'));
+    statusPanel.classList.toggle('is-error', !!state.statusError);
+    statusPanel.classList.toggle('is-success', !state.statusError && !state.busy);
+    statusTitleNode.textContent = title;
+    statusBadgeNode.textContent = badge;
+    statusTextNode.textContent = message;
   }
 
   function setStatusKey(key, isError) {
@@ -317,7 +327,7 @@
       return '<span class="status-pill is-unsupported">' + escapeHtml(server.unsupported_reason || t('unsupported')) + '</span>';
     }
     if (server.maybe_unsupported === true) {
-      return '<span class="status-pill is-maybe">' + escapeHtml(server.maybe_unsupported_reason || t('maybe')) + '</span>';
+      return '<span class="status-pill is-maybe" title="' + escapeHtml(server.maybe_unsupported_reason || t('maybe')) + '">' + escapeHtml(t('maybeShort')) + '</span>';
     }
     return '<span class="status-pill">' + escapeHtml(t('supported')) + '</span>';
   }
@@ -484,7 +494,7 @@
     state.primaryId = '';
 
     getServers().forEach(function (server) {
-      state.enabledMap[server.id] = server.excluded !== true;
+      state.enabledMap[server.id] = server.excluded !== true || server.maybe_unsupported === true;
     });
 
     renderAll();
