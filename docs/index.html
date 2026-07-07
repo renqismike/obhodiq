@@ -78,46 +78,50 @@
         </div>
       </form>
 
-      <div class="tabs">
-        <button class="tab is-active" data-tab="overview" type="button" data-i18n="tabOverview">Обзор</button>
-        <button class="tab" data-tab="preview" type="button" data-i18n="tabLinks">Ссылки</button>
-      </div>
-
-      <div class="tab-content is-active" data-tab-content="overview">
-        <div class="table-shell">
-          <table class="servers-table">
-            <colgroup>
-              <col class="col-primary">
-              <col class="col-enabled">
-              <col class="col-server">
-              <col class="col-type">
-              <col class="col-status">
-            </colgroup>
-            <thead>
-              <tr>
-                <th class="primary-col" data-i18n="thPrimary">Основной</th>
-                <th class="enabled-col" data-i18n="thEnabled">Вкл</th>
-                <th data-i18n="thServer">Сервер</th>
-                <th data-i18n="thType">Тип</th>
-                <th data-i18n="thStatus">Статус</th>
-              </tr>
-            </thead>
-            <tbody id="servers-body">
-              <tr>
-                <td colspan="5" class="empty-row">Здесь появятся серверы после разбора подписки.</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="content-shell">
+        <div class="tabs-shell">
+          <div class="tabs">
+            <button class="tab is-active" data-tab="overview" type="button" data-i18n="tabOverview">Обзор</button>
+            <button class="tab" data-tab="preview" type="button" data-i18n="tabLinks">Ссылки</button>
+          </div>
         </div>
-      </div>
 
-      <div class="tab-content" data-tab-content="preview">
-        <div class="preview-topline">
-          <div data-i18n="previewTopline">Ниже показаны ссылки, которые Obhodiq сформировал после разбора подписки и отправляет в Podkop.</div>
-          <button id="copy-all-button" class="btn btn-secondary btn-small" type="button" data-i18n="copyAll">Скопировать всё</button>
+        <div class="tab-content is-active" data-tab-content="overview">
+          <div class="table-shell">
+            <table class="servers-table">
+              <colgroup>
+                <col class="col-primary">
+                <col class="col-enabled">
+                <col class="col-server">
+                <col class="col-type">
+                <col class="col-status">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="primary-col" data-i18n="thPrimary">Основной</th>
+                  <th class="enabled-col" data-i18n="thEnabled">Вкл</th>
+                  <th data-i18n="thServer">Сервер</th>
+                  <th data-i18n="thType">Тип</th>
+                  <th data-i18n="thStatus">Статус</th>
+                </tr>
+              </thead>
+              <tbody id="servers-body">
+                <tr>
+                  <td colspan="5" class="empty-row">Здесь появятся серверы после разбора подписки.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div id="preview-list" class="preview-list">
-          <div class="preview-empty" data-i18n="nothingYet">Пока нечего показывать.</div>
+
+        <div class="tab-content" data-tab-content="preview">
+          <div class="preview-topline">
+            <div data-i18n="previewTopline">Ниже показаны ссылки, которые Obhodiq сформировал после разбора подписки и отправляет в Podkop.</div>
+            <button id="copy-all-button" class="btn btn-secondary btn-small" type="button" data-i18n="copyAll">Скопировать всё</button>
+          </div>
+          <div id="preview-list" class="preview-list">
+            <div class="preview-empty" data-i18n="nothingYet">Пока нечего показывать.</div>
+          </div>
         </div>
       </div>
     </section>

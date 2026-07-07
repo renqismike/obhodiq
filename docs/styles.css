@@ -306,11 +306,23 @@ body {
   color: #b6d8c2;
 }
 
+.content-shell {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(18, 24, 35, .42);
+  overflow: hidden;
+}
+
+.tabs-shell {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(52, 65, 87, .5);
+  background: rgba(20, 27, 38, .9);
+}
+
 .tabs {
   display: flex;
   gap: 8px;
-  margin-top: 18px;
-  margin-bottom: 18px;
+  margin: 0;
   flex-wrap: wrap;
 }
 
@@ -380,8 +392,6 @@ body {
 .table-shell {
   overflow-x: auto;
   overflow-y: hidden;
-  border: 1px solid var(--line);
-  border-radius: 20px;
 }
 
 .servers-table {
@@ -556,11 +566,13 @@ body {
   margin-bottom: 14px;
   color: var(--muted);
   flex-wrap: wrap;
+  padding: 16px 16px 0;
 }
 
 .preview-list {
   display: grid;
   gap: 12px;
+  padding: 0 16px 16px;
 }
 
 .preview-item {
