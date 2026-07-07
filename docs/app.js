@@ -536,8 +536,8 @@
     state.primaryMode = 'auto';
     state.primaryId = '';
 
-    metaProfile.textContent = '-';
     heroProfile.textContent = '-';
+    metaActive.textContent = '-';
     metaTraffic.textContent = '0 B';
     metaExpire.textContent = '-';
     metaUpdated.textContent = '-';
