@@ -112,6 +112,7 @@
 
   function resolveApiBase() {
     var host = (window.location && window.location.hostname) || '';
+    var origin = (window.location && window.location.origin) || '';
 
     try {
       var params = new URLSearchParams(window.location.search || '');
@@ -137,7 +138,11 @@
       // ignore
     }
 
-    return (window.location.origin || '').replace(/\/$/, '') + '/obhodiq-api';
+    if (/github\.io$/i.test(host)) {
+      return 'https://anonchattapps.duckdns.org/obhodiq-api';
+    }
+
+    return origin.replace(/\/$/, '') + '/obhodiq-api';
   }
 
   var API_BASE = resolveApiBase();
