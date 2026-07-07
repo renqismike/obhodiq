@@ -2,6 +2,7 @@
   var I18N = {
     ru: {
       heroSubtitle: 'Демо парсинга подписок для Podkop',
+      cardActive: 'Активный',
       heroNote: 'Эта страница только разбирает подписку и показывает результат. Пинги, реальная работа серверов и совместимость с конкретным роутером здесь не проверяются.',
       subscriptionLabel: 'Ссылка подписки',
       subscriptionPlaceholder: 'Вставьте ссылку подписки',
@@ -15,7 +16,6 @@
       thServer: 'Сервер',
       thType: 'Тип',
       thStatus: 'Статус',
-      cardProfile: 'Профиль',
       cardTraffic: 'Трафик',
       cardExpire: 'Истекает',
       cardUpdated: 'Обновлено',
@@ -56,6 +56,7 @@
     },
     en: {
       heroSubtitle: 'Podkop subscription parsing demo',
+      cardActive: 'Active',
       heroNote: 'This page only parses a subscription and shows the result. Pings, real server operation, and compatibility with a specific router are not checked here.',
       subscriptionLabel: 'Subscription URL',
       subscriptionPlaceholder: 'Paste subscription URL',
@@ -69,7 +70,6 @@
       thServer: 'Server',
       thType: 'Type',
       thStatus: 'Status',
-      cardProfile: 'Profile',
       cardTraffic: 'Traffic',
       cardExpire: 'Expires',
       cardUpdated: 'Updated',
@@ -178,7 +178,7 @@
   var langButtons = Array.prototype.slice.call(document.querySelectorAll('.lang-btn'));
   var heroProfile = document.getElementById('hero-profile');
 
-  var metaProfile = document.getElementById('meta-profile');
+  var metaActive = document.getElementById('meta-active');
   var metaTraffic = document.getElementById('meta-traffic');
   var metaExpire = document.getElementById('meta-expire');
   var metaUpdated = document.getElementById('meta-updated');
@@ -382,9 +382,16 @@
     var profile = meta.profile_title || '-';
     var used = Number(meta.used || ((Number(meta.upload || 0) + Number(meta.download || 0)) || 0));
     var remaining = meta.remaining;
+    var previewServers = getPreviewServers();
+    var activeBase = state.lang === 'ru' ? 'Авто' : 'Auto';
+    var activeLabel = activeBase;
+
+    if (previewServers.length) {
+      activeLabel = activeBase + ': ' + normalizeDisplayName(previewServers[0].name || '-');
+    }
 
     heroProfile.textContent = profile;
-    metaProfile.textContent = profile;
+    metaActive.textContent = activeLabel;
     metaTraffic.textContent = bytesToHuman(used);
     metaExpire.textContent = formatDate(meta.expire);
     metaUpdated.textContent = formatDate(meta.updated_at);

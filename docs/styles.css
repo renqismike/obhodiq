@@ -130,6 +130,7 @@ body {
 .hero-subtitle {
   margin: 0;
   color: var(--muted);
+  display: none;
 }
 
 .hero-badge {
@@ -239,11 +240,11 @@ body {
 .status-panel {
   display: grid;
   gap: 4px;
-  min-height: 54px;
+  min-height: 78px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #2f3b4e;
-  background: #202838;
+  border-radius: 16px;
+  border: 1px solid #334056;
+  background: rgba(30, 39, 55, .9);
 }
 
 .status-head {
@@ -290,9 +291,9 @@ body {
 
 .status-text {
   color: #9fb0cb;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.25;
-  min-height: 14px;
+  min-height: 18px;
   padding-left: 16px;
 }
 
@@ -382,8 +383,18 @@ body {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 12px;
+}
+
+.card-time-left {
+  min-width: 0;
 }
 
 .card {
@@ -640,6 +651,10 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .status-row {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (max-width: 720px) {
@@ -664,6 +679,10 @@ body {
 
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .status-row {
+    grid-template-columns: 1fr;
   }
 
   .actions {

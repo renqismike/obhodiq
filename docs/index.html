@@ -13,7 +13,6 @@
         <div>
           <h1 class="app-title">Obhodiq</h1>
           <div class="app-profile" id="hero-profile">-</div>
-          <p class="hero-subtitle" data-i18n="heroSubtitle">Демо парсинга подписок для Podkop</p>
         </div>
         <div class="hero-actions">
           <div class="lang-switch" role="group" aria-label="Language switch">
@@ -32,8 +31,8 @@
 
       <div class="cards" id="meta-cards">
         <article class="card">
-          <div class="card-label" data-i18n="cardProfile">Профиль</div>
-          <div class="card-value" id="meta-profile">-</div>
+          <div class="card-label" data-i18n="cardActive">Активный</div>
+          <div class="card-value" id="meta-active">-</div>
         </article>
         <article class="card">
           <div class="card-label" data-i18n="cardTraffic">Трафик</div>
@@ -51,19 +50,21 @@
           <div class="card-label" data-i18n="cardRemaining">Остаток</div>
           <div class="card-value" id="meta-remaining">Без лимита</div>
         </article>
-        <article class="card">
+      </div>
+
+      <div class="status-row">
+        <div id="status-panel" class="status-panel">
+          <div class="status-head">
+            <span id="status-dot" class="status-dot"></span>
+            <strong id="status-title" class="status-title">Готово</strong>
+            <span id="status-badge" class="status-badge">ГОТОВО</span>
+          </div>
+          <div id="status-text" class="status-text">Готово к проверке.</div>
+        </div>
+        <article class="card card-time-left">
           <div class="card-label" data-i18n="cardTimeLeft">Осталось</div>
           <div class="card-value" id="meta-time-left">-</div>
         </article>
-      </div>
-
-      <div id="status-panel" class="status-panel">
-        <div class="status-head">
-          <span id="status-dot" class="status-dot"></span>
-          <strong id="status-title" class="status-title">Готово</strong>
-          <span id="status-badge" class="status-badge">ГОТОВО</span>
-        </div>
-        <div id="status-text" class="status-text">Готово к проверке.</div>
       </div>
 
       <form id="parse-form" class="form-grid">
