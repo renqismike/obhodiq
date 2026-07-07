@@ -16,6 +16,7 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 - [Requirements](#requirements)
 - [Install](#install)
 - [Manual install](#manual-install)
+- [Manual language switch](#manual-language-switch)
 - [Remove](#remove)
 - [Interface](#interface)
 - [How subscription auto-update works](#how-subscription-auto-update-works)
@@ -170,6 +171,15 @@ For OpenWrt with `apk`:
 
 ```sh
 apk add --allow-untrusted obhodiq-0.1.1-r2.apk luci-app-obhodiq-0.1.1-r2.apk
+```
+
+### Manual language switch
+
+The commands below work the same for Obhodiq installed either through `opkg` (`ipk`) or through `apk`.
+
+```sh
+/usr/bin/obhodiq set-lang ru
+/usr/bin/obhodiq set-lang en
 ```
 
 ## Remove
