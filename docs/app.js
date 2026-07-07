@@ -146,6 +146,7 @@
   }
 
   var API_BASE = resolveApiBase();
+  var DEVICE_ID_KEY = 'obhodiq-demo-device-id';
 
   var state = {
     raw: null,
@@ -187,6 +188,38 @@
   function t(key) {
     var dict = I18N[state.lang] || I18N.ru;
     return dict[key] || key;
+  }
+
+  function getDemoDeviceId() {
+    try {
+      var saved = (window.localStorage.getItem(DEVICE_ID_KEY) || '').trim();
+      if (saved) {
+        return saved;
+      }
+    } catch (error) {
+      // ignore
+    }
+
+    var generated = '';
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        generated = window.crypto.randomUUID();
+      }
+    } catch (error) {
+      // ignore
+    }
+
+    if (!generated) {
+      generated = 'obhodiq-demo-' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
+
+    try {
+      window.localStorage.setItem(DEVICE_ID_KEY, generated);
+    } catch (error) {
+      // ignore
+    }
+
+    return generated;
   }
 
   function applyLanguage() {
@@ -249,6 +282,13 @@
     return String(value == null ? '' : value)
       .replace(/([\u{1F1E6}-\u{1F1FF}]{2})/gu, ' $1 ')
       .replace(/([🟢🔃🚀🌐🐢])/gu, ' $1 ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function normalizeNoticeText(value) {
+    return String(value == null ? '' : value)
+      .replace(/\r/g, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -367,18 +407,29 @@
     var notices = Array.isArray(meta.notices) ? meta.notices.filter(Boolean) : [];
     var announce = meta.announce || '';
     var chunks = [];
+    var seen = [];
 
-    if (announce) {
-      chunks.push(announce);
-    }
-    notices.forEach(function (notice) {
-      if (chunks.indexOf(notice) === -1) {
-        chunks.push(notice);
+    function pushNotice(value) {
+      var normalized = normalizeNoticeText(value);
+      if (!normalized) {
+        return;
       }
-    });
-    if (error && chunks.indexOf(error) === -1) {
-      chunks.push(error);
+
+      var duplicate = seen.some(function (existing) {
+        return existing === normalized || existing.indexOf(normalized) !== -1 || normalized.indexOf(existing) !== -1;
+      });
+
+      if (duplicate) {
+        return;
+      }
+
+      seen.push(normalized);
+      chunks.push(normalized);
     }
+
+    pushNotice(announce);
+    notices.forEach(pushNotice);
+    pushNotice(error);
 
     if (!chunks.length) {
       noticeBox.classList.add('is-hidden');
@@ -511,7 +562,10 @@
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ url: url })
+      body: JSON.stringify({
+        url: url,
+        device_id: getDemoDeviceId()
+      })
     }).then(function (response) {
       return response.json().catch(function () {
         return {};
