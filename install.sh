@@ -6,7 +6,7 @@ APP_NAME="Obhodiq"
 APP_PKG="obhodiq"
 LUCI_PKG="luci-app-obhodiq"
 OBHODIQ_VERSION="${OBHODIQ_VERSION:-0.2.0}"
-OBHODIQ_RELEASE_TAG="${OBHODIQ_RELEASE_TAG:-0.2.0}"
+OBHODIQ_RELEASE_TAG="${OBHODIQ_RELEASE_TAG:-v0.2.0}"
 RELEASE_BASE_URL="${RELEASE_BASE_URL:-https://github.com/renqismike/obhodiq/releases/download/${OBHODIQ_RELEASE_TAG}}"
 TMP_DIR="${TMPDIR:-/tmp}/obhodiq-install"
 
