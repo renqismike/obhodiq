@@ -5,9 +5,11 @@ set -eu
 APP_NAME="Obhodiq"
 APP_PKG="obhodiq"
 LUCI_PKG="luci-app-obhodiq"
-OBHODIQ_VERSION="${OBHODIQ_VERSION:-0.2.0}"
-OBHODIQ_RELEASE_TAG="${OBHODIQ_RELEASE_TAG:-v0.2.0}"
-RELEASE_BASE_URL="${RELEASE_BASE_URL:-https://github.com/renqismike/obhodiq/releases/download/${OBHODIQ_RELEASE_TAG}}"
+REPO_OWNER="${REPO_OWNER:-renqismike}"
+REPO_NAME="${REPO_NAME:-obhodiq}"
+OBHODIQ_VERSION="${OBHODIQ_VERSION:-}"
+OBHODIQ_RELEASE_TAG="${OBHODIQ_RELEASE_TAG:-}"
+RELEASE_BASE_URL="${RELEASE_BASE_URL:-}"
 TMP_DIR="${TMPDIR:-/tmp}/obhodiq-install"
 
 log() {
@@ -43,6 +45,48 @@ detect_pkg_manager() {
   fi
 
   fail "Neither opkg nor apk was found."
+}
+
+fetch_text() {
+  url="$1"
+
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO- "$url" 2>/dev/null || return 1
+    return 0
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" || return 1
+    return 0
+  fi
+
+  fail "wget or curl is required."
+}
+
+resolve_release() {
+  if [ -n "$RELEASE_BASE_URL" ] && [ -n "$OBHODIQ_VERSION" ]; then
+    return 0
+  fi
+
+  release_api="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
+  release_json="$(fetch_text "$release_api")" || fail "Failed to fetch the latest Obhodiq release metadata."
+
+  latest_tag="$(printf '%s' "$release_json" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  [ -n "$latest_tag" ] || fail "Failed to detect the latest Obhodiq release tag."
+
+  if [ -z "$OBHODIQ_RELEASE_TAG" ]; then
+    OBHODIQ_RELEASE_TAG="$latest_tag"
+  fi
+
+  if [ -z "$OBHODIQ_VERSION" ]; then
+    OBHODIQ_VERSION="${OBHODIQ_RELEASE_TAG#v}"
+  fi
+
+  if [ -z "$RELEASE_BASE_URL" ]; then
+    RELEASE_BASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${OBHODIQ_RELEASE_TAG}"
+  fi
+
+  log "Using Obhodiq release: ${OBHODIQ_RELEASE_TAG}"
 }
 
 require_podkop() {
@@ -144,6 +188,7 @@ set_obhodiq_lang() {
 main() {
   mkdir -p "$TMP_DIR"
   detect_pkg_manager
+  resolve_release
   require_podkop
 
   backend_pkg="$(fetch_asset "$APP_PKG")" || fail "Failed to download ${APP_PKG}.${PKG_EXT}"
