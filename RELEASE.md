@@ -2,7 +2,7 @@
 
 ## English
 
-### Obhodiq 0.1.1
+### Obhodiq 0.2.0
 
 This release focuses on stabilizing package installation, subscription refresh behavior, server switching, and cleaner Podkop integration.
 
@@ -28,7 +28,7 @@ Tested with:
 
 ## Русский
 
-### Obhodiq 0.1.1
+### Obhodiq 0.2.0
 
 Этот релиз в первую очередь посвящён стабилизации установки пакетов, обновления подписок, переключения серверов и более чистой интеграции с Podkop.
 

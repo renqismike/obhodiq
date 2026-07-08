@@ -5,8 +5,8 @@ set -eu
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="${2:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 SDK_ROOT="${1:-${OPENWRT_APK_SDK_ROOT:-}}"
-VERSION="${3:-0.1.1-r2}"
-DIST_DIR="$PROJECT_ROOT/dist"
+VERSION="${3:-0.2.0}"
+DIST_DIR="$PROJECT_ROOT/dist-v020"
 WORK_DIR="$SDK_ROOT/tmp/obhodiq-apk-build"
 APK_BIN="$SDK_ROOT/staging_dir/host/bin/apk"
 

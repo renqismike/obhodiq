@@ -154,23 +154,23 @@ sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/mai
 Then install Obhodiq:
 
 ```sh
-wget -O /tmp/obhodiq-install.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh && sh /tmp/obhodiq-install.sh; rc=$?; rm -f /tmp/obhodiq-install.sh; exit $rc
+sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh)
 ```
 
 ## Manual install
 
-If you prefer manual installation, use the package files from the release assets or from the repository `dist/` directory.
+If you prefer manual installation, use the package files from the release assets.
 
 For OpenWrt with `opkg`:
 
 ```sh
-opkg install obhodiq_0.1.1-r2_all.ipk luci-app-obhodiq_0.1.1-r2_all.ipk
+opkg install obhodiq_0.2.0_all.ipk luci-app-obhodiq_0.2.0_all.ipk
 ```
 
 For OpenWrt with `apk`:
 
 ```sh
-apk add --allow-untrusted obhodiq-0.1.1-r2.apk luci-app-obhodiq-0.1.1-r2.apk
+apk add --allow-untrusted obhodiq-0.2.0.apk luci-app-obhodiq-0.2.0.apk
 ```
 
 ### Manual language switch
@@ -187,7 +187,7 @@ The commands below work the same for Obhodiq installed either through `opkg` (`i
 Recommended full removal:
 
 ```sh
-wget -O /tmp/obhodiq-uninstall.sh https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh && sh /tmp/obhodiq-uninstall.sh; rc=$?; rm -f /tmp/obhodiq-uninstall.sh; exit $rc
+sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh)
 ```
 
 Manual package removal with `opkg`:
@@ -206,7 +206,7 @@ apk del obhodiq
 
 Important:
 
-- the `obhodiq-uninstall.sh` method is the main recommended one, because it explicitly uses the official uninstall script from the repository
+- the `uninstall.sh` method is the main recommended one, because it uses the official uninstall script from the repository
 - manual removal through `opkg` or `apk` should also clean up Obhodiq leftovers correctly when the current package version is installed
 - removing Obhodiq is intended not to remove or break Podkop itself
 

@@ -1,11 +1,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-obhodiq
-PKG_VERSION:=0.1.1
-PKG_RELEASE:=2
+PKG_VERSION:=0.2.0
+PKG_RELEASE:=0
 
 PKG_LICENSE:=GPL-2.0-or-later
-PKG_MAINTAINER:=Local
+PKG_MAINTAINER:=renqismike
 PKG_BUILD_DEPENDS:=
 
 include $(INCLUDE_DIR)/package.mk
