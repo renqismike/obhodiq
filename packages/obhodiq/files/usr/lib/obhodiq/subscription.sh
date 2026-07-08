@@ -97,7 +97,7 @@ build_type_label() {
     *) security_label="$(printf '%s' "$security" | awk '{print toupper($0)}')" ;;
   esac
 
-  printf '%s / %s / %s / JSON\n' \
+  printf '%s / %s / %s\n' \
     "$scheme_label" \
     "$transport_label" \
     "$security_label"
@@ -156,7 +156,7 @@ collect_subscription_notices() {
     return 0
   }
 
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     line="$(printf '%s' "$line" | sed 's/\r$//;s/^[[:space:]]*//;s/[[:space:]]*$//')"
     [ -n "$line" ] || continue
     case "$line" in
@@ -264,7 +264,7 @@ extract_links_from_json_config() {
     return 0
   }
 
-  while IFS= read -r item; do
+  while IFS= read -r item || [ -n "$item" ]; do
     [ -n "${item:-}" ] || continue
     protocol="$(printf '%s' "$item" | jq -r '.protocol // empty' 2>/dev/null)"
 
@@ -803,7 +803,7 @@ parse_subscription() {
     decoded="$(printf '%s' "$compact" | base64 -d 2>/dev/null || true)"
     if [ -n "$decoded" ]; then
       decoded_file="$(mktemp)"
-      printf '%s' "$decoded" > "$decoded_file"
+      printf '%s\n' "$decoded" > "$decoded_file"
       parse_input_file="$decoded_file"
     fi
   fi
@@ -819,7 +819,7 @@ parse_subscription() {
   fi
 
   tmp_list="$(mktemp)"
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     line="$(printf '%s' "$line" | sed 's/\r$//;s/^[[:space:]]*//;s/[[:space:]]*$//')"
     [ -n "$line" ] || continue
     case "$line" in

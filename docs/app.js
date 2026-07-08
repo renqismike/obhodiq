@@ -361,7 +361,7 @@
     });
   }
 
-  function getPreviewServers() {
+  function getPodkopPreviewServers() {
     return getVisibleServers().filter(function (server) {
       return server.enabled && server.unsupported !== true;
     });
@@ -403,7 +403,7 @@
     var visible = getVisibleServers();
     var supported = visible.filter(function (server) { return server.unsupported !== true; }).length;
     var unsupported = visible.filter(function (server) { return server.unsupported === true; }).length;
-    var previewCount = getPreviewServers().length;
+    var previewCount = getPodkopPreviewServers().length;
 
     summaryLine.textContent = t('summarySupported') + ': ' + supported + ' • ' + t('summaryInList') + ': ' + previewCount + ' • ' + t('summaryUnsupported') + ': ' + unsupported;
   }
@@ -491,7 +491,7 @@
   }
 
   function renderPreview() {
-    var previewServers = getPreviewServers();
+    var previewServers = getVisibleServers();
 
     if (!previewServers.length) {
       previewList.innerHTML = '<div class="preview-empty">' + escapeHtml(t('noLinks')) + '</div>';
@@ -641,7 +641,7 @@
   });
 
   copyAllButton.addEventListener('click', function () {
-    var links = getPreviewServers().map(function (server) {
+    var links = getPodkopPreviewServers().map(function (server) {
       return server.url || server.link || '';
     }).filter(Boolean);
     copyText(links.join('\n'), t('copiedAll'));
@@ -715,7 +715,7 @@
       return;
     }
 
-    var server = getPreviewServers().find(function (item) {
+    var server = getPodkopPreviewServers().find(function (item) {
       return item.id === serverId;
     });
     if (!server) {
