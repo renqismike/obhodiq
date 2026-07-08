@@ -139,14 +139,17 @@ fetch_asset() {
       fail "Unsupported package manager: $PKG_MANAGER"
       ;;
   esac
-  url="${RELEASE_BASE_URL}/${file_name}"
   out="${TMP_DIR}/${file_name}"
+  release_url="${RELEASE_BASE_URL}/${file_name}"
+  raw_url="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/packages/downloads/${file_name}"
 
   log "Downloading ${file_name}"
   if command -v wget >/dev/null 2>&1; then
-    wget -O "$out" "$url" >/dev/null 2>&1 || return 1
+    wget -O "$out" "$release_url" >/dev/null 2>&1 || \
+    wget -O "$out" "$raw_url" >/dev/null 2>&1 || return 1
   elif command -v curl >/dev/null 2>&1; then
-    curl -fsSL -o "$out" "$url" || return 1
+    curl -fsSL -o "$out" "$release_url" || \
+    curl -fsSL -o "$out" "$raw_url" || return 1
   else
     fail "wget or curl is required."
   fi
