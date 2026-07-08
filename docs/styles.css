@@ -396,12 +396,17 @@ body {
 
 .status-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
+}
+
+.status-panel {
+  grid-column: span 4;
 }
 
 .card-time-left {
   min-width: 0;
+  grid-column: span 1;
 }
 
 .card {
@@ -659,7 +664,11 @@ body {
   }
 
   .status-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .status-panel {
+    grid-column: span 2;
   }
 
 }
@@ -698,7 +707,12 @@ body {
   }
 
   .status-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .status-panel,
+  .card-time-left {
+    grid-column: span 1;
   }
 
   .actions {
@@ -720,6 +734,10 @@ body {
 
 @media (max-width: 520px) {
   .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .status-row {
     grid-template-columns: 1fr;
   }
 }

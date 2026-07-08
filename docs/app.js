@@ -382,7 +382,7 @@
     var profile = meta.profile_title || '-';
     var used = Number(meta.used || ((Number(meta.upload || 0) + Number(meta.download || 0)) || 0));
     var remaining = meta.remaining;
-    var previewServers = getPreviewServers();
+    var previewServers = getPodkopPreviewServers();
     var activeBase = state.lang === 'ru' ? 'Авто' : 'Auto';
     var activeLabel = activeBase;
 
