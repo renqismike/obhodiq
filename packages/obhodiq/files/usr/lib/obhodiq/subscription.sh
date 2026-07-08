@@ -2,8 +2,53 @@
 
 urldecode_text() {
   value="$1"
-  value="$(printf '%s' "$value" | sed 's/+/ /g; s/%/\\x/g')"
-  printf '%b' "$value"
+  result=''
+  value="$(printf '%s' "$value" | sed 's/+/ /g')"
+
+  while [ -n "$value" ]; do
+    char="${value%"${value#?}"}"
+    value="${value#?}"
+
+    if [ "$char" = "%" ] && [ "${#value}" -ge 2 ]; then
+      hex="${value%"${value#??}"}"
+      case "$hex" in
+        [0-9A-Fa-f][0-9A-Fa-f])
+          value="${value#??}"
+          dec="$(printf '%d' "0x$hex" 2>/dev/null || true)"
+          [ -n "$dec" ] || {
+            result="${result}%${hex}"
+            continue
+          }
+          oct="$(printf '%03o' "$dec")"
+          result="${result}$(printf "\\$oct")"
+          continue
+          ;;
+      esac
+    fi
+
+    if [ "$char" = "\\" ] && [ "${#value}" -ge 3 ]; then
+      marker="${value%"${value#?}"}"
+      hex="${value#?}"
+      hex="${hex%"${hex#??}"}"
+      case "$marker$hex" in
+        x[0-9A-Fa-f][0-9A-Fa-f]|X[0-9A-Fa-f][0-9A-Fa-f])
+          value="${value#???}"
+          dec="$(printf '%d' "0x$hex" 2>/dev/null || true)"
+          [ -n "$dec" ] || {
+            result="${result}\\${marker}${hex}"
+            continue
+          }
+          oct="$(printf '%03o' "$dec")"
+          result="${result}$(printf "\\$oct")"
+          continue
+          ;;
+      esac
+    fi
+
+    result="${result}${char}"
+  done
+
+  printf '%s\n' "$result"
 }
 
 decode_meta_value() {
