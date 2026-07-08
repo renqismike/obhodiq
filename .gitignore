@@ -2,6 +2,8 @@ sdk/
 tmp-repack/
 *.ipk
 *.apk
+!packages/downloads/*.ipk
+!packages/downloads/*.apk
 *.log
 vm-backup-legacy-current/
 github-release-upload/
