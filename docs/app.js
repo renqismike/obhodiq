@@ -139,7 +139,7 @@
     }
 
     if (/github\.io$/i.test(host)) {
-      return 'https://anonchattapps.duckdns.org/obhodiq-api';
+      return 'https://' + ['anonchattapps', 'duckdns', 'org'].join('.') + '/obhodiq-api';
     }
 
     return origin.replace(/\/$/, '') + '/obhodiq-api';

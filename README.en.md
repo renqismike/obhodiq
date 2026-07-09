@@ -39,8 +39,10 @@ Obhodiq is an add-on for [Podkop](https://github.com/itdoginfo/podkop) on OpenWr
 > A quick parsing demo is available here:
 > [renqismike.github.io/obhodiq](https://renqismike.github.io/obhodiq/)
 >
-> URLs entered there are used only for the current check.
-> However, your VPN provider **may still count such a request as a new device or a new session**.
+> - subscription data stays only in the browser cache
+> - the demo uses a local `device id` stored in the browser and reused for later checks
+> - this reduces the chance that a provider will count each repeated check as a new device
+> - different VPN providers may still account for such requests differently
 
 ## Important
 

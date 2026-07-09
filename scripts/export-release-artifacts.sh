@@ -6,7 +6,7 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="${2:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 SDK_ROOT="${1:-${OPENWRT_SDK_ROOT:-}}"
 APK_SDK_ROOT="${3:-${OPENWRT_APK_SDK_ROOT:-}}"
-DIST_DIR="$PROJECT_ROOT/dist"
+DIST_DIR="$PROJECT_ROOT/dist-v020"
 PKG_DIR="$SDK_ROOT/bin/packages/mipsel_24kc/base"
 APK_PKG_DIR=""
 
@@ -30,9 +30,5 @@ rm -f \
 
 [ -d "$PKG_DIR" ] && cp -f "$PKG_DIR"/obhodiq_*.ipk "$DIST_DIR"/ 2>/dev/null || true
 [ -d "$PKG_DIR" ] && cp -f "$PKG_DIR"/luci-app-obhodiq_*.ipk "$DIST_DIR"/ 2>/dev/null || true
-
-cp -f "$PROJECT_ROOT/install.sh" "$DIST_DIR"/install.sh
-cp -f "$PROJECT_ROOT/uninstall.sh" "$DIST_DIR"/uninstall.sh
-cp -f "$PROJECT_ROOT/RELEASE.md" "$DIST_DIR"/RELEASE.md
 
 printf 'Exported release artifacts to %s\n' "$DIST_DIR"
