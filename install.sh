@@ -11,6 +11,7 @@ OBHODIQ_VERSION="${OBHODIQ_VERSION:-}"
 OBHODIQ_RELEASE_TAG="${OBHODIQ_RELEASE_TAG:-}"
 RELEASE_BASE_URL="${RELEASE_BASE_URL:-}"
 TMP_DIR="${TMPDIR:-/tmp}/obhodiq-install"
+CONFIG_BACKUP_FILE="${TMPDIR:-/tmp}/obhodiq-install-backup"
 
 log() {
   printf '%s\n' "$*" >&2
@@ -27,6 +28,7 @@ note() {
 
 cleanup() {
   rm -rf "$TMP_DIR"
+  rm -f "$CONFIG_BACKUP_FILE"
 }
 
 trap cleanup EXIT INT TERM
@@ -180,6 +182,49 @@ install_package_files() {
   esac
 }
 
+backup_existing_config() {
+  command -v uci >/dev/null 2>&1 || return 0
+  uci -q show obhodiq >/dev/null 2>&1 || return 0
+
+  {
+    printf 'enabled=%s\n' "$(uci -q get obhodiq.main.enabled 2>/dev/null || true)"
+    printf 'lang=%s\n' "$(uci -q get obhodiq.main.lang 2>/dev/null || true)"
+    printf 'subscription_url=%s\n' "$(uci -q get obhodiq.main.subscription_url 2>/dev/null || true)"
+    printf 'update_schedule=%s\n' "$(uci -q get obhodiq.main.update_schedule 2>/dev/null || true)"
+    printf 'selection_mode=%s\n' "$(uci -q get obhodiq.main.selection_mode 2>/dev/null || true)"
+    printf 'active_server_id=%s\n' "$(uci -q get obhodiq.main.active_server_id 2>/dev/null || true)"
+    printf 'active_group=%s\n' "$(uci -q get obhodiq.main.active_group 2>/dev/null || true)"
+    printf 'podkop_section_name=%s\n' "$(uci -q get obhodiq.main.podkop_section_name 2>/dev/null || true)"
+    printf 'auto_select=%s\n' "$(uci -q get obhodiq.main.auto_select 2>/dev/null || true)"
+    printf 'test_url=%s\n' "$(uci -q get obhodiq.main.test_url 2>/dev/null || true)"
+    printf 'latency_timeout=%s\n' "$(uci -q get obhodiq.main.latency_timeout 2>/dev/null || true)"
+    printf 'latency_attempts=%s\n' "$(uci -q get obhodiq.main.latency_attempts 2>/dev/null || true)"
+    printf 'outage_retry_minutes=%s\n' "$(uci -q get obhodiq.main.outage_retry_minutes 2>/dev/null || true)"
+    printf 'last_subscription_update=%s\n' "$(uci -q get obhodiq.main.last_subscription_update 2>/dev/null || true)"
+  } > "$CONFIG_BACKUP_FILE"
+}
+
+restore_existing_config() {
+  command -v uci >/dev/null 2>&1 || return 0
+  [ -s "$CONFIG_BACKUP_FILE" ] || return 0
+
+  while IFS='=' read -r key value || [ -n "${key:-}" ]; do
+    [ -n "${key:-}" ] || continue
+    case "$key" in
+      enabled|lang|subscription_url|update_schedule|selection_mode|active_server_id|active_group|podkop_section_name|auto_select|test_url|latency_timeout|latency_attempts|outage_retry_minutes|last_subscription_update)
+        [ -n "${value:-}" ] || continue
+        uci -q set "obhodiq.main.${key}=${value}" || true
+        ;;
+    esac
+  done < "$CONFIG_BACKUP_FILE"
+
+  uci -q commit obhodiq || true
+
+  if [ -f /etc/config/obhodiq-opkg ]; then
+    rm -f /etc/config/obhodiq-opkg || true
+  fi
+}
+
 fetch_asset() {
   pkg_name="$1"
   case "$PKG_MANAGER" in
@@ -251,11 +296,13 @@ main() {
   detect_pkg_manager
   resolve_release
   require_podkop
+  backup_existing_config
 
   backend_pkg="$(fetch_asset "$APP_PKG")" || fail "Failed to download ${APP_PKG}.${PKG_EXT}"
   luci_pkg="$(fetch_asset "$LUCI_PKG")" || fail "Failed to download ${LUCI_PKG}.${PKG_EXT}"
 
   install_package_files "$backend_pkg" "$luci_pkg"
+  restore_existing_config
 
   if ask_ru_package; then
     set_obhodiq_lang "ru"
