@@ -12,6 +12,7 @@ OBHODIQ_RELEASE_TAG="${OBHODIQ_RELEASE_TAG:-}"
 RELEASE_BASE_URL="${RELEASE_BASE_URL:-}"
 TMP_DIR="${TMPDIR:-/tmp}/obhodiq-install"
 CONFIG_BACKUP_FILE="${TMPDIR:-/tmp}/obhodiq-install-backup"
+STATE_BACKUP_DIR="${TMPDIR:-/tmp}/obhodiq-install-state"
 
 log() {
   printf '%s\n' "$*" >&2
@@ -29,6 +30,7 @@ note() {
 cleanup() {
   rm -rf "$TMP_DIR"
   rm -f "$CONFIG_BACKUP_FILE"
+  rm -rf "$STATE_BACKUP_DIR"
 }
 
 trap cleanup EXIT INT TERM
@@ -204,6 +206,14 @@ backup_existing_config() {
   } > "$CONFIG_BACKUP_FILE"
 }
 
+backup_existing_state() {
+  [ -d /etc/obhodiq ] || return 0
+
+  rm -rf "$STATE_BACKUP_DIR"
+  mkdir -p "$STATE_BACKUP_DIR"
+  cp -fpR /etc/obhodiq/. "$STATE_BACKUP_DIR"/ 2>/dev/null || true
+}
+
 restore_existing_config() {
   command -v uci >/dev/null 2>&1 || return 0
   [ -s "$CONFIG_BACKUP_FILE" ] || return 0
@@ -223,6 +233,13 @@ restore_existing_config() {
   if [ -f /etc/config/obhodiq-opkg ]; then
     rm -f /etc/config/obhodiq-opkg || true
   fi
+}
+
+restore_existing_state() {
+  [ -d "$STATE_BACKUP_DIR" ] || return 0
+
+  mkdir -p /etc/obhodiq
+  cp -fpR "$STATE_BACKUP_DIR"/. /etc/obhodiq/ 2>/dev/null || true
 }
 
 fetch_asset() {
@@ -297,12 +314,14 @@ main() {
   resolve_release
   require_podkop
   backup_existing_config
+  backup_existing_state
 
   backend_pkg="$(fetch_asset "$APP_PKG")" || fail "Failed to download ${APP_PKG}.${PKG_EXT}"
   luci_pkg="$(fetch_asset "$LUCI_PKG")" || fail "Failed to download ${LUCI_PKG}.${PKG_EXT}"
 
   install_package_files "$backend_pkg" "$luci_pkg"
   restore_existing_config
+  restore_existing_state
 
   if ask_ru_package; then
     set_obhodiq_lang "ru"

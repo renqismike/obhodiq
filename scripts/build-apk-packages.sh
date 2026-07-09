@@ -64,8 +64,10 @@ EOF
 
 cat >"$BACKEND_SCRIPTS/pre-deinstall" <<'EOF'
 #!/bin/sh
-/usr/bin/obhodiq set-update-schedule never >/dev/null 2>&1 || true
+ACTION="${APK_PACKAGE_FUNCTION:-remove}"
 /etc/init.d/obhodiq stop >/dev/null 2>&1 || true
+[ "$ACTION" = "upgrade" ] && exit 0
+/usr/bin/obhodiq set-update-schedule never >/dev/null 2>&1 || true
 /etc/init.d/obhodiq disable >/dev/null 2>&1 || true
 if [ -f /etc/crontabs/root ]; then
   tmp_file="$(mktemp)"
@@ -82,6 +84,8 @@ EOF
 
 cat >"$BACKEND_SCRIPTS/post-deinstall" <<'EOF'
 #!/bin/sh
+ACTION="${APK_PACKAGE_FUNCTION:-remove}"
+[ "$ACTION" = "upgrade" ] && exit 0
 rm -rf /etc/obhodiq /var/run/obhodiq
 rm -f /tmp/obhodiq-auto-update.log /tmp/obhodiq-ping-refresh.log /tmp/obhodiq*.ipk /tmp/obhodiq*.apk
 rm -f /etc/config/obhodiq /etc/init.d/obhodiq /usr/bin/obhodiq /www/cgi-bin/obhodiq
