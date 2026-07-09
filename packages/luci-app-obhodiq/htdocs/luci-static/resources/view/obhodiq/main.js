@@ -534,6 +534,7 @@ return view.extend({
       latencyRefreshStartedAt: 0,
       latencyLastCount: -1,
       latencyStableRounds: 0,
+      urlInputDirty: false,
       infoMessage: '',
       infoIsError: false
     };
@@ -582,6 +583,22 @@ return view.extend({
     subUrlInput.addEventListener('input', function () {
       state.urlInputDirty = true;
     });
+
+    function shouldPreserveUrlInput(nextUrl) {
+      var currentInput = (subUrlInput.value || '').trim();
+      var normalizedNextUrl = normalizeUrl(nextUrl);
+      var normalizedInput = normalizeUrl(currentInput);
+
+      if (!state.urlInputDirty) {
+        return false;
+      }
+
+      if (!normalizedInput) {
+        return false;
+      }
+
+      return normalizedInput !== normalizedNextUrl;
+    }
     var scheduleSelect = el('select', {
       style: 'width:180px;min-width:180px;height:42px;padding:0 12px;border-radius:12px;border:1px solid #334056;background:#111722;color:#eef4ff;'
     }, [
@@ -1379,7 +1396,10 @@ return view.extend({
           state.activeId = state.data.configured_active_server_id || state.data.active_server_id || ((state.data.servers && state.data.servers[0] && state.data.servers[0].id) || '');
           state.enabled = state.data.enabled !== false;
           state.updateSchedule = state.data.update_schedule || 'never';
-          subUrlInput.value = state.data.subscription_url || '';
+          if (!shouldPreserveUrlInput(state.data.subscription_url)) {
+            subUrlInput.value = state.data.subscription_url || '';
+            state.urlInputDirty = false;
+          }
           scheduleSelect.value = state.updateSchedule;
           updateEnabledButton();
           if (!refreshReady) {
@@ -1714,6 +1734,7 @@ return view.extend({
           }
           state.data.subscription_url = inputUrl;
           subUrlInput.value = inputUrl;
+          state.urlInputDirty = false;
 
           if (urlChanged) {
             setInfo(t('url_saved_refresh_needed'), false);
@@ -1749,6 +1770,7 @@ return view.extend({
         }
         state.data.subscription_url = inputUrl;
         subUrlInput.value = inputUrl;
+        state.urlInputDirty = false;
       });
     }
 
