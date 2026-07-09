@@ -18,6 +18,8 @@ var I18N = {
     hours: '{hours} h.',
     loading_data: 'Loading data...',
     sub_placeholder: 'Paste subscription URL',
+    empty_subscription_title: 'Subscription not added',
+    empty_subscription_text: 'Paste a subscription URL and click Save URL.',
     working: 'Working...',
     done: 'Done',
     error: 'Error: ',
@@ -65,6 +67,34 @@ var I18N = {
     saving_selection: 'Saving...',
     selection_applied: 'Selection applied',
     selection_saved: 'Saved',
+    status: 'Status',
+    status_badge_idle: 'Ready',
+    status_badge_working: 'Loading',
+    status_badge_success: 'Ready',
+    status_badge_error: 'Error',
+    status_badge_disabled: 'Off',
+    status_ready_title: 'Ready',
+    status_ready_text: 'Subscription loaded.',
+    status_loading_title: 'Loading data',
+    status_loading_text: 'Reading the current state.',
+    status_fetching_title: 'Downloading subscription',
+    status_fetching_text: 'Receiving data from the provider.',
+    status_parsing_title: 'Parsing subscription',
+    status_parsing_text: 'Preparing the server list.',
+    status_applying_title: 'Sending servers to Podkop',
+    status_applying_text: 'Saving supported servers to Podkop.',
+    status_best_title: 'Selecting the best server',
+    status_best_text: 'Podkop is choosing the best server.',
+    status_latency_title: 'Checking ping',
+    status_latency_text: 'Podkop is still updating ping values.',
+    status_done_title: 'Completed',
+    status_done_text: '',
+    status_error_title: 'Error',
+    status_error_text: 'The last action ended with an error.',
+    status_disabled_title: 'Manager disabled',
+    status_disabled_text: 'Obhodiq does not interfere with Podkop.',
+    status_empty_title: 'Subscription not added',
+    status_empty_text: 'Paste a subscription URL and click Save URL.',
     primary: 'Primary',
     enabled_col: 'On',
     server: 'Server',
@@ -90,6 +120,8 @@ var I18N = {
     hours: '{hours} ч.',
     loading_data: 'Загрузка данных...',
     sub_placeholder: 'Вставьте ссылку подписки',
+    empty_subscription_title: 'Подписка не добавлена',
+    empty_subscription_text: 'Вставьте ссылку подписки и нажмите «Сохранить ссылку».',
     working: 'Выполняется...',
     done: 'Готово',
     error: 'Ошибка: ',
@@ -137,6 +169,34 @@ var I18N = {
     saving_selection: 'Сохраняем...',
     selection_applied: 'Выбор применён',
     selection_saved: 'Сохранено',
+    status: 'Статус',
+    status_badge_idle: 'Готово',
+    status_badge_working: 'Загрузка',
+    status_badge_success: 'Готово',
+    status_badge_error: 'Ошибка',
+    status_badge_disabled: 'Выкл',
+    status_ready_title: 'Готово',
+    status_ready_text: 'Подписка загружена.',
+    status_loading_title: 'Загрузка данных',
+    status_loading_text: 'Читаем текущее состояние.',
+    status_fetching_title: 'Загружаем подписку',
+    status_fetching_text: 'Получаем данные от провайдера.',
+    status_parsing_title: 'Разбираем подписку',
+    status_parsing_text: 'Готовим список серверов.',
+    status_applying_title: 'Отправляем серверы в Podkop',
+    status_applying_text: 'Сохраняем серверы в Podkop.',
+    status_best_title: 'Выбираем лучший сервер',
+    status_best_text: 'Podkop выбирает лучший сервер.',
+    status_latency_title: 'Проверяем пинг',
+    status_latency_text: 'Podkop ещё обновляет пинги.',
+    status_done_title: 'Готово',
+    status_done_text: '',
+    status_error_title: 'Ошибка',
+    status_error_text: 'Последнее действие завершилось с ошибкой.',
+    status_disabled_title: 'Менеджер выключен',
+    status_disabled_text: 'Obhodiq не вмешивается в работу Podkop.',
+    status_empty_title: 'Подписка не добавлена',
+    status_empty_text: 'Вставьте ссылку подписки и нажмите «Сохранить ссылку».',
     primary: 'Основной',
     enabled_col: 'Вкл',
     server: 'Сервер',
@@ -279,6 +339,96 @@ function scheduleLabel(value) {
   }
 }
 
+function cleanErrorMessage(message) {
+  var value = String(message || '').replace(/\s+/g, ' ').trim();
+  var httpMatch;
+  var httpCode;
+  var httpNames;
+  if (!value) {
+    return t('status_error_text');
+  }
+
+  value = value.replace(/^(Error:\s*)+/i, '');
+  value = value.replace(/^Could not read status:\s*/i, '');
+  value = value.replace(/^Не удалось прочитать статус:\s*/i, '');
+
+  if (/^HTTP 0$/i.test(value) || /^HTTP 0\b/i.test(value) || /Network error/i.test(value)) {
+    return UI_LANG === 'ru'
+      ? 'Не удалось получить ответ от ссылки подписки.'
+      : 'Could not get a response from the subscription URL.';
+  }
+
+  httpMatch = value.match(/(?:HTTP|error:)\s*(\d{3})/i) || value.match(/returned error:\s*(\d{3})/i);
+  if (httpMatch) {
+    httpCode = String(httpMatch[1]);
+    httpNames = {
+      '400': UI_LANG === 'ru' ? 'Неверный запрос' : 'Bad Request',
+      '401': UI_LANG === 'ru' ? 'Требуется авторизация' : 'Unauthorized',
+      '403': UI_LANG === 'ru' ? 'Доступ запрещён' : 'Forbidden',
+      '404': UI_LANG === 'ru' ? 'Ссылка не найдена' : 'Not Found',
+      '410': UI_LANG === 'ru' ? 'Ссылка больше недоступна' : 'Gone',
+      '429': UI_LANG === 'ru' ? 'Слишком много запросов' : 'Too Many Requests',
+      '500': UI_LANG === 'ru' ? 'Внутренняя ошибка сервера' : 'Internal Server Error',
+      '502': UI_LANG === 'ru' ? 'Сервер провайдера временно недоступен' : 'Provider server is temporarily unavailable',
+      '503': UI_LANG === 'ru' ? 'Сервис временно недоступен' : 'Service Unavailable',
+      '504': UI_LANG === 'ru' ? 'Сервер провайдера не ответил вовремя' : 'Provider server timed out'
+    };
+    return UI_LANG === 'ru'
+      ? 'Ошибка подписки: сервер вернул ' + httpCode + (httpNames[httpCode] ? ' (' + httpNames[httpCode] + ')' : '')
+      : 'Subscription error: server returned ' + httpCode + (httpNames[httpCode] ? ' (' + httpNames[httpCode] + ')' : '');
+  }
+
+  if (/Subscription update is not complete yet or no supported servers were found/i.test(value)) {
+    return UI_LANG === 'ru'
+      ? 'Подписка ещё не успела прогрузиться или не найдено поддерживаемых серверов.'
+      : 'The subscription is still loading or no supported servers were found.';
+  }
+
+  if (/Подписка ещё не догрузилась или не найдено поддерживаемых серверов/i.test(value)) {
+    return 'Подписка ещё не успела прогрузиться или не найдено поддерживаемых серверов.';
+  }
+
+  return value;
+}
+
+function successStatusTitle(message) {
+  var value = String(message || '').trim();
+  if (!value) {
+    return t('status_done_title');
+  }
+  return value;
+}
+
+function successStatusText(message) {
+  var value = String(message || '').trim();
+
+  if (!value) {
+    return '';
+  }
+
+  if (value === t('url_saved_refresh_needed')) {
+    return UI_LANG === 'ru'
+      ? 'Теперь нажмите «Обновить подписку».'
+      : 'Now click “Refresh subscription”.';
+  }
+
+  return '';
+}
+
+function isLikelySubscriptionInput(value) {
+  var input = String(value || '').trim();
+  if (!input) {
+    return false;
+  }
+
+  return /^(https?:\/\/|happ:\/\/|vless:\/\/|vmess:\/\/|trojan:\/\/|ss:\/\/|socks4:\/\/|socks5:\/\/|hy2:\/\/|hysteria:\/\/|hysteria2:\/\/)/i.test(input);
+}
+
+function isEmptySubscriptionState(data) {
+  var url = String((data && data.subscription_url) || '').trim();
+  return !url && Number((data && data.count) || 0) <= 0 && Number((data && data.supported_count) || 0) <= 0;
+}
+
 function buildButton(label, onClick, accent) {
   var background = accent ? '#e3ad3f' : '#1b2433';
   var border = accent ? '#e3ad3f' : '#344157';
@@ -383,8 +533,11 @@ return view.extend({
       latencyRefreshActive: false,
       latencyRefreshStartedAt: 0,
       latencyLastCount: -1,
-      latencyStableRounds: 0
+      latencyStableRounds: 0,
+      infoMessage: '',
+      infoIsError: false
     };
+    var uiVersion = '0.2.0';
     var saveUrlButton;
     var refreshSubButton;
     var refreshPingButton;
@@ -398,14 +551,36 @@ return view.extend({
     var pingHeader;
 
     var root = el('div', { class: 'cbi-map', style: 'max-width:1260px' });
-    var infoBar = el('div', {
-      style: 'min-height:20px;margin:10px 0 14px;color:#95a6c5;font-size:13px;'
-    }, [t('loading_data')]);
+    var statusBadge;
+    var statusTitle;
+    var statusText;
+    var statusMeta;
+    var statusDot;
+    var statusPanel = el('div', {
+      style: 'display:grid;grid-template-columns:minmax(0,1fr);gap:4px;align-items:flex-start;padding:9px 12px;border-radius:12px;border:1px solid #334056;background:#202838;min-height:54px;box-sizing:border-box;color:#d7e2f5;grid-column:1 / span 10;'
+    }, [
+      el('div', { style: 'min-width:0;display:grid;grid-template-rows:minmax(20px,auto) minmax(14px,auto) minmax(12px,auto);row-gap:2px;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:8px;min-height:20px;' }, [
+          (statusDot = el('span', {
+            style: 'width:8px;height:8px;border-radius:999px;background:#6ea0ff;box-shadow:0 0 0 4px rgba(110,160,255,.12);flex:none;'
+          })),
+          (statusTitle = el('strong', { style: 'font-size:13px;line-height:1.2;color:#f4f7ff;min-width:0;flex:1 1 auto;' }, [t('status_loading_title')])),
+          (statusBadge = el('span', {
+            style: 'display:inline-flex;align-items:center;justify-content:center;height:20px;min-width:62px;padding:0 8px;border-radius:999px;border:1px solid #334056;background:#202838;color:#9eb0cc;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;visibility:hidden;'
+          }, [t('loading')]))
+        ]),
+        (statusText = el('div', { style: 'color:#9fb0cb;font-size:11px;line-height:1.25;min-height:14px;padding-left:16px;' }, [t('status_loading_text')])),
+        (statusMeta = el('div', { style: 'color:#7f93b1;font-size:10px;line-height:1.2;min-height:12px;visibility:hidden;padding-left:16px;' }))
+      ])
+    ]);
     var tableBody = el('tbody');
     var subUrlInput = el('input', {
       type: 'text',
       placeholder: t('sub_placeholder'),
       style: 'width:100%;height:46px;padding:0 14px;border-radius:12px;border:1px solid #334056;background:#111722;color:#eef4ff;margin-bottom:12px;'
+    });
+    subUrlInput.addEventListener('input', function () {
+      state.urlInputDirty = true;
     });
     var scheduleSelect = el('select', {
       style: 'width:180px;min-width:180px;height:42px;padding:0 12px;border-radius:12px;border:1px solid #334056;background:#111722;color:#eef4ff;'
@@ -422,9 +597,223 @@ return view.extend({
       style: 'display:grid;gap:8px;margin-bottom:18px;min-height:0;align-content:start;'
     });
 
+    function renderStatusPanel(data) {
+      var view = getRuntimeStatusView(data);
+      var metaValue = String(view.meta || '');
+      var toneStyles = {
+        loading: {
+          border: '#2f3b4e',
+          background: '#202838',
+          dot: '#6ea0ff',
+          glow: 'rgba(110,160,255,.12)',
+          badgeBg: '#223149',
+          badgeBorder: '#3a5478',
+          badgeColor: '#bed1f3',
+          text: '#b6c7e2'
+        },
+        success: {
+          border: '#2f3b4e',
+          background: '#202838',
+          dot: '#57d394',
+          glow: 'rgba(87,211,148,.12)',
+          badgeBg: '#233129',
+          badgeBorder: '#355344',
+          badgeColor: '#bdeecf',
+          text: '#b6d8c2'
+        },
+        error: {
+          border: '#2f3b4e',
+          background: '#202838',
+          dot: '#ff7f93',
+          glow: 'rgba(255,127,147,.12)',
+          badgeBg: '#3a2530',
+          badgeBorder: '#69404e',
+          badgeColor: '#ffc1cc',
+          text: '#f0b7c1'
+        },
+        muted: {
+          border: '#2f3b4e',
+          background: '#202838',
+          dot: '#8e98a9',
+          glow: 'rgba(142,152,169,.12)',
+          badgeBg: '#232937',
+          badgeBorder: '#424a57',
+          badgeColor: '#c7cfdb',
+          text: '#a9b4c8'
+        },
+        info: {
+          border: '#2f3b4e',
+          background: '#202838',
+          dot: '#6ea0ff',
+          glow: 'rgba(110,160,255,.12)',
+          badgeBg: '#202838',
+          badgeBorder: '#334056',
+          badgeColor: '#9eb0cc',
+          text: '#9fb0cb'
+        }
+      };
+      var tone = toneStyles[view.tone] || toneStyles.info;
+
+      statusPanel.style.borderColor = tone.border;
+      statusPanel.style.background = tone.background;
+      statusDot.style.background = tone.dot;
+      statusDot.style.boxShadow = '0 0 0 6px ' + tone.glow;
+      statusTitle.textContent = view.title;
+      statusText.textContent = view.text;
+      statusText.style.color = tone.text;
+      statusText.style.visibility = view.text ? 'visible' : 'hidden';
+      statusBadge.textContent = view.badge;
+      statusBadge.style.background = tone.badgeBg;
+      statusBadge.style.borderColor = tone.badgeBorder;
+      statusBadge.style.color = tone.badgeColor;
+      statusBadge.style.visibility = view.badge && String(view.badge).trim().toLowerCase() !== String(view.title || '').trim().toLowerCase()
+        ? 'visible'
+        : 'hidden';
+      if (
+        metaValue === t('ping_updated') ||
+        metaValue === t('sub_updated') ||
+        metaValue === t('selection_applied') ||
+        metaValue === t('selection_saved') ||
+        metaValue === t('schedule_saved') ||
+        metaValue === t('url_saved') ||
+        metaValue === t('url_saved_refresh_needed')
+      ) {
+        metaValue = '';
+      }
+      statusMeta.textContent = metaValue;
+      statusMeta.style.visibility = metaValue ? 'visible' : 'hidden';
+    }
+
     function setInfo(message, isError) {
-      infoBar.style.color = isError ? '#ff9191' : '#95a6c5';
-      infoBar.textContent = message || '';
+      state.infoMessage = message || '';
+      state.infoIsError = !!isError;
+      renderStatusPanel(state.data);
+    }
+
+    function getRuntimeStatusView(data) {
+      var runtime = (data && data.runtime_status) || {};
+      var tone = 'info';
+      var badge = t('status_badge_idle');
+      var title = t('status_ready_title');
+      var textValue = t('status_ready_text');
+      var meta = '';
+
+      if (!state.enabled) {
+        return {
+          tone: 'muted',
+          badge: t('status_badge_disabled'),
+          title: t('status_disabled_title'),
+          text: t('status_disabled_text'),
+          meta: ''
+        };
+      }
+
+      if (data && isEmptySubscriptionState(data)) {
+        return {
+          tone: 'muted',
+          badge: t('status_badge_idle'),
+          title: t('status_empty_title'),
+          text: t('status_empty_text'),
+          meta: ''
+        };
+      }
+
+      if (state.subscriptionRefreshLoading && !data) {
+        return {
+          tone: 'loading',
+          badge: t('status_badge_working'),
+          title: t('status_loading_title'),
+          text: t('status_loading_text'),
+          meta: ''
+        };
+      }
+
+      if (state.infoIsError && state.infoMessage) {
+        return {
+          tone: 'error',
+          badge: t('status_badge_error'),
+          title: t('status_error_title'),
+          text: cleanErrorMessage(state.infoMessage),
+          meta: ''
+        };
+      }
+
+      if (state.subscriptionRefreshLoading) {
+        tone = 'loading';
+        badge = t('status_badge_working');
+      }
+
+      if (runtime && runtime.busy) {
+        tone = runtime.level === 'error' ? 'error' : 'loading';
+        badge = runtime.level === 'error' ? t('status_badge_error') : t('status_badge_working');
+        switch (String(runtime.phase || '')) {
+          case 'fetching':
+            title = t('status_fetching_title');
+            textValue = t('status_fetching_text');
+            break;
+          case 'parsing':
+            title = t('status_parsing_title');
+            textValue = t('status_parsing_text');
+            break;
+          case 'applying':
+            title = t('status_applying_title');
+            textValue = t('status_applying_text');
+            break;
+          case 'selecting-best':
+            title = t('status_best_title');
+            textValue = t('status_best_text');
+            break;
+          case 'latency':
+            title = t('status_latency_title');
+            textValue = t('status_latency_text');
+            break;
+          default:
+            title = t('status_loading_title');
+            textValue = t('status_loading_text');
+            break;
+        }
+        if (runtime.total) {
+          meta = t('ping_progress', {
+            current: String(runtime.current || 0),
+            total: String(runtime.total || 0)
+          });
+        } else if (state.infoMessage && !state.infoIsError) {
+          meta = state.infoMessage;
+        }
+      } else if (state.latencyRefreshActive || Number(state.passiveLatencyTrackingUntil || 0) > Date.now()) {
+        tone = 'loading';
+        badge = t('status_badge_working');
+        title = t('status_latency_title');
+        textValue = t('status_latency_text');
+        meta = formatLatencyProgressMessage(data || state.data || {}, false);
+      } else if (state.infoMessage && !state.infoIsError) {
+        if (state.infoMessage === t('sub_updated') || state.infoMessage === t('ping_updated') || state.infoMessage === t('selection_applied') || state.infoMessage === t('selection_saved') || state.infoMessage === t('schedule_saved') || state.infoMessage === t('url_saved') || state.infoMessage === t('url_saved_refresh_needed')) {
+          tone = 'success';
+          badge = t('status_badge_success');
+          title = successStatusTitle(state.infoMessage);
+          textValue = successStatusText(state.infoMessage);
+          meta = '';
+        } else {
+          textValue = state.infoMessage;
+          meta = '';
+        }
+      }
+
+      if (data && data.subscription_error && data.subscription_error.message && Number(data.count || 0) <= 0 && !runtime.busy) {
+        tone = 'error';
+        badge = t('status_badge_error');
+        title = t('status_error_title');
+        textValue = cleanErrorMessage(data.subscription_error.message);
+        meta = '';
+      }
+
+      return {
+        tone: tone,
+        badge: badge,
+        title: title,
+        text: textValue,
+        meta: meta
+      };
     }
 
     function relabelButton(button, label) {
@@ -460,6 +849,7 @@ return view.extend({
       if (pingHeader) {
         pingHeader.textContent = t('ping');
       }
+      renderStatusPanel();
     }
 
     function buildParams(params) {
@@ -637,8 +1027,17 @@ return view.extend({
         : liveServer.name;
     }
 
+    function ellipsisText(value) {
+      var full = String(value || '-');
+      return el('div', {
+        title: full,
+        style: 'font-size:12px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;'
+      }, [full]);
+    }
+
     function renderSummary(data) {
       var meta = data.meta || {};
+      var emptySubscription = isEmptySubscriptionState(data);
       var notices = Array.isArray(meta.notices) ? meta.notices.filter(function (item) {
         return !!item;
       }) : [];
@@ -681,52 +1080,76 @@ return view.extend({
       scheduleSelect.value = data.update_schedule || state.updateSchedule || 'never';
       subscriptionMeta.innerHTML = '';
       subscriptionMeta.appendChild(el('div', {
-        style: 'font-size:16px;font-weight:700;color:#f4f7ff;min-height:26px;display:flex;align-items:center;'
-      }, [state.subscriptionRefreshLoading ? t('loading_data') : text(meta.profile_title || '-', '-')]));
-      subscriptionMeta.appendChild(el('div', {
-        style: 'min-height:18px;font-size:12px;color:#8fa2c0;display:flex;align-items:center;'
+        style: 'display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:2px;'
       }, [
-        state.subscriptionRefreshLoading
-          ? t('loading_data')
-          : t('supported_line', {
-              supported: String(data.supported_count || 0),
-              latency: String(data.latency_count || 0),
-              unsupported: String(data.unsupported_count || 0)
-            })
+        el('div', {
+          title: state.subscriptionRefreshLoading ? t('loading_data') : (emptySubscription ? t('empty_subscription_title') : text(meta.profile_title || '-', '-')),
+          style: 'display:inline-flex;align-items:center;min-height:34px;max-width:min(100%,420px);padding:0 14px;border-radius:14px;border:1px solid #31425d;background:#202838;color:#f4f7ff;font-size:16px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+        }, [state.subscriptionRefreshLoading ? t('loading_data') : (emptySubscription ? t('empty_subscription_title') : text(meta.profile_title || '-', '-'))]),
+        el('div', {
+          style: 'min-height:18px;font-size:12px;color:#8fa2c0;display:flex;align-items:center;'
+        }, [
+          state.subscriptionRefreshLoading
+            ? t('loading_data')
+            : t('supported_line', {
+                supported: String(data.supported_count || 0),
+                latency: String(data.latency_count || 0),
+                unsupported: String(data.unsupported_count || 0)
+              })
+        ])
       ]));
       if (summaryMessages.length) {
         subscriptionMeta.appendChild(el('div', {
           style: 'padding:10px 12px;border-radius:12px;background:rgba(227,173,63,.12);border:1px solid rgba(227,173,63,.35);color:#ffe3a3;font-size:13px;line-height:1.45;'
         }, [summaryMessages.join(' | ')]));
+      } else if (emptySubscription) {
+        subscriptionMeta.appendChild(el('div', {
+          style: 'padding:10px 12px;border-radius:12px;background:rgba(143,162,192,.08);border:1px solid rgba(143,162,192,.22);color:#b8c6dc;font-size:13px;line-height:1.45;'
+        }, [t('empty_subscription_text')]));
       }
-      subscriptionMeta.appendChild(el('div', {
-        style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;'
+      var summaryGrid = el('div', {
+        style: 'display:grid;gap:8px;align-items:stretch;'
+      });
+      var summaryTopRow = el('div', {
+        style: 'display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch;'
       }, [
         el('div', { style: 'min-height:44px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
           el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('active')]),
-          el('div', { style: 'font-size:14px;font-weight:700;' }, [getActiveCardText()])
+          ellipsisText(getActiveCardText())
         ]),
         el('div', { style: 'min-height:44px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
           el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('traffic')]),
-          el('div', { style: 'font-size:14px;font-weight:700;' }, [bytesToHuman(meta.used || 0)])
+          ellipsisText(bytesToHuman(meta.used || 0))
         ]),
         el('div', { style: 'min-height:44px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
           el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('expires')]),
-          el('div', { style: 'font-size:14px;font-weight:700;' }, [formatExpire(meta.expire)])
+          ellipsisText(formatExpire(meta.expire))
         ]),
         el('div', { style: 'min-height:44px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
           el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('updated')]),
-          el('div', { style: 'font-size:14px;font-weight:700;' }, [formatUpdated(data.updated_at || meta.updated_at || 0)])
+          ellipsisText(formatUpdated(data.updated_at || meta.updated_at || 0))
         ]),
         el('div', { style: 'min-height:44px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
           el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('remaining')]),
-          el('div', { style: 'font-size:14px;font-weight:700;' }, [Number(meta.total || 0) > 0 ? bytesToHuman(meta.remaining || 0) : t('unlimited')])
-        ]),
-        el('div', { style: 'min-height:44px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
-          el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('time_left')]),
-          el('div', { style: 'font-size:14px;font-weight:700;color:#ffd36b;' }, [formatRemaining(meta)])
+          ellipsisText(Number(meta.total || 0) > 0 ? bytesToHuman(meta.remaining || 0) : t('unlimited'))
         ])
+      ]);
+      var summaryBottomRow = el('div', {
+        style: 'display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch;'
+      });
+      statusPanel.style.gridColumn = '1 / span 4';
+      summaryBottomRow.appendChild(statusPanel);
+      summaryBottomRow.appendChild(el('div', { style: 'grid-column:span 1;min-height:54px;padding:10px 12px;border-radius:12px;background:#202838;border:1px solid #2f3b4e;color:#d7e2f5;' }, [
+        el('div', { style: 'font-size:11px;color:#91a2bf;text-transform:uppercase;margin-bottom:4px;' }, [t('time_left')]),
+        el('div', {
+          title: formatRemaining(meta),
+          style: 'font-size:12px;font-weight:700;line-height:1.25;color:#ffd36b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;'
+        }, [formatRemaining(meta)])
       ]));
+      summaryGrid.appendChild(summaryTopRow);
+      summaryGrid.appendChild(summaryBottomRow);
+      subscriptionMeta.appendChild(summaryGrid);
+      renderStatusPanel(data);
     }
 
     function compactIconButton(label, onClick) {
@@ -905,15 +1328,22 @@ return view.extend({
           if (state.subscriptionRefreshLoading) {
             var currentUpdatedAt = getStatusUpdatedAt(data);
             var errorUpdatedAt = getSubscriptionErrorUpdatedAt(data);
+            var parsedMatchesCurrent = hasMatchingParsedSource(data, pendingUrl || statusUrl);
+            var readyWithServers = !!(
+              data &&
+              Number(data.count || 0) > 0 &&
+              parsedMatchesCurrent &&
+              isApplyReady(data, state.subscriptionRefreshPreviousUpdatedAt)
+            );
             var hasFreshError = !!(
               data &&
               data.subscription_error &&
               data.subscription_error.message &&
               errorUpdatedAt >= state.subscriptionRefreshPreviousUpdatedAt
             );
-            refreshReady = hasFreshError || (
+            refreshReady = readyWithServers || hasFreshError || (
               currentUpdatedAt >= state.subscriptionRefreshPreviousUpdatedAt &&
-              hasMatchingParsedSource(data, '') &&
+              parsedMatchesCurrent &&
               isApplyReady(data, state.subscriptionRefreshPreviousUpdatedAt)
             );
           }
@@ -1209,9 +1639,15 @@ return view.extend({
             state.data.subscription_error.message &&
             errorUpdatedAt >= previousUpdatedAt
           );
-          var parsedMatches = hasMatchingParsedSource(state.data, '');
+          var parsedMatches = hasMatchingParsedSource(state.data, state.pendingSavedUrl || (state.data && state.data.subscription_url) || '');
+          var readyWithServers = !!(
+            state.data &&
+            Number(state.data.count || 0) > 0 &&
+            parsedMatches &&
+            isApplyReady(state.data, previousUpdatedAt)
+          );
 
-          if ((currentUpdatedAt >= previousUpdatedAt && parsedMatches && isApplyReady(state.data, previousUpdatedAt)) || hasFreshError) {
+          if (readyWithServers || (currentUpdatedAt >= previousUpdatedAt && parsedMatches && isApplyReady(state.data, previousUpdatedAt)) || hasFreshError) {
             return true;
           }
 
@@ -1564,20 +2000,27 @@ return view.extend({
       '.cbi-map button:hover{filter:none!important;}'
     ]));
 
-    root.appendChild(el('div', {
+    var contentCard = el('div', {
       style: 'background:linear-gradient(180deg,#1c2432 0%,#171d28 100%);border:1px solid #2d3749;border-radius:18px;padding:22px 24px 20px;margin-bottom:16px;'
     }, [
       el('div', {
         style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;'
       }, [
         el('div', {
-          style: 'font-size:20px;font-weight:800;color:#f4f7ff;'
+          style: 'display:inline-flex;align-items:center;min-height:38px;padding:0 16px;border-radius:14px;border:1px solid #31425d;background:linear-gradient(180deg,#233047 0%,#1e293b 100%);color:#f4f7ff;font-size:20px;font-weight:800;letter-spacing:.01em;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);min-width:0;'
         }, ['Obhodiq']),
-        (toggleEnabledButton = buildButton('⏻', toggleManagerEnabled))
+        el('div', {
+          style: 'display:flex;align-items:flex-start;gap:10px;flex:none;'
+        }, [
+          el('div', {
+            style: 'display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 10px;border-radius:10px;border:1px solid #2f3b4e;background:#202838;color:#8fa2c0;font-size:11px;font-weight:700;letter-spacing:.04em;'
+          }, ['v' + uiVersion]),
+          (toggleEnabledButton = buildButton('⏻', toggleManagerEnabled))
+        ]),
       ]),
       subscriptionMeta,
       subUrlInput,
-      el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;align-items:center;' }, [
+      el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;' }, [
         (saveUrlButton = buildButton(t('save_url'), saveUrl, true)),
         (refreshSubButton = buildButton(t('refresh_sub_btn'), refreshSubscription)),
         el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto;' }, [
@@ -1587,12 +2030,10 @@ return view.extend({
             (saveScheduleButton = buildButton(t('save'), saveSchedule))
           ])
         ])
-      ])
-    ]));
-
-    root.appendChild(infoBar);
-
-    root.appendChild(table);
+      ]),
+      table
+    ]);
+    root.appendChild(contentCard);
     refresh().finally(function () {
       scheduleStatusPoll();
     });

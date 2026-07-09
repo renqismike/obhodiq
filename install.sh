@@ -63,15 +63,69 @@ fetch_text() {
   fail "wget or curl is required."
 }
 
+release_version_key() {
+  tag="${1#v}"
+  base="$tag"
+  rev="0"
+
+  case "$tag" in
+    *-r*)
+      base="${tag%-r*}"
+      rev="${tag##*-r}"
+      case "$rev" in
+        ''|*[!0-9]*) rev="0" ;;
+      esac
+      ;;
+  esac
+
+  major="$(printf '%s' "$base" | awk -F. '{print ($1 == "" ? 0 : $1) + 0}')"
+  minor="$(printf '%s' "$base" | awk -F. '{print ($2 == "" ? 0 : $2) + 0}')"
+  patch="$(printf '%s' "$base" | awk -F. '{print ($3 == "" ? 0 : $3) + 0}')"
+
+  printf '%09d%09d%09d%09d' "$major" "$minor" "$patch" "$rev"
+}
+
+pick_highest_release_tag() {
+  json="$1"
+  tmp_file="$(mktemp)"
+  best_tag=""
+  best_key=""
+
+  printf '%s' "$json" | tr '\n' ' ' | sed 's/},[[:space:]]*{/}\n{/g' > "$tmp_file"
+
+  while IFS= read -r release_item || [ -n "${release_item:-}" ]; do
+    case "$release_item" in
+      *'"draft":false'*'"prerelease":false'*)
+        tag="$(printf '%s' "$release_item" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+        [ -n "$tag" ] || continue
+        key="$(release_version_key "$tag")"
+        if [ -z "$best_key" ] || [ "$key" \> "$best_key" ]; then
+          best_key="$key"
+          best_tag="$tag"
+        fi
+        ;;
+    esac
+  done < "$tmp_file"
+
+  rm -f "$tmp_file"
+  printf '%s\n' "$best_tag"
+}
+
 resolve_release() {
   if [ -n "$RELEASE_BASE_URL" ] && [ -n "$OBHODIQ_VERSION" ]; then
     return 0
   fi
 
-  release_api="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
-  release_json="$(fetch_text "$release_api")" || fail "Failed to fetch the latest Obhodiq release metadata."
+  release_list_api="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=20"
+  release_list_json="$(fetch_text "$release_list_api")" || fail "Failed to fetch Obhodiq release metadata."
+  latest_tag="$(pick_highest_release_tag "$release_list_json")"
 
-  latest_tag="$(printf '%s' "$release_json" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  if [ -z "$latest_tag" ]; then
+    release_api="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
+    release_json="$(fetch_text "$release_api")" || fail "Failed to fetch the latest Obhodiq release metadata."
+    latest_tag="$(printf '%s' "$release_json" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  fi
+
   [ -n "$latest_tag" ] || fail "Failed to detect the latest Obhodiq release tag."
 
   if [ -z "$OBHODIQ_RELEASE_TAG" ]; then
@@ -144,15 +198,19 @@ fetch_asset() {
   raw_url="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/packages/downloads/${file_name}"
 
   log "Downloading ${file_name}"
-  if command -v wget >/dev/null 2>&1; then
-    wget -O "$out" "$release_url" >/dev/null 2>&1 || \
-    wget -O "$out" "$raw_url" >/dev/null 2>&1 || return 1
-  elif command -v curl >/dev/null 2>&1; then
+  if command -v curl >/dev/null 2>&1; then
     curl -fsSL -o "$out" "$release_url" || \
-    curl -fsSL -o "$out" "$raw_url" || return 1
-  else
-    fail "wget or curl is required."
+    curl -fsSL -o "$out" "$raw_url" || true
   fi
+
+  if [ ! -s "$out" ] && command -v wget >/dev/null 2>&1; then
+    wget -O "$out" "$release_url" >/dev/null 2>&1 || \
+    wget --no-check-certificate -O "$out" "$release_url" >/dev/null 2>&1 || \
+    wget -O "$out" "$raw_url" >/dev/null 2>&1 || \
+    wget --no-check-certificate -O "$out" "$raw_url" >/dev/null 2>&1 || true
+  fi
+
+  [ -s "$out" ] || fail "wget or curl could not download ${file_name}."
 
   printf '%s\n' "$out"
 }

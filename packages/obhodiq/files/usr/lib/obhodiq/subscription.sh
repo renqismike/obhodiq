@@ -2,53 +2,8 @@
 
 urldecode_text() {
   value="$1"
-  result=''
-  value="$(printf '%s' "$value" | sed 's/+/ /g')"
-
-  while [ -n "$value" ]; do
-    char="${value%"${value#?}"}"
-    value="${value#?}"
-
-    if [ "$char" = "%" ] && [ "${#value}" -ge 2 ]; then
-      hex="${value%"${value#??}"}"
-      case "$hex" in
-        [0-9A-Fa-f][0-9A-Fa-f])
-          value="${value#??}"
-          dec="$(printf '%d' "0x$hex" 2>/dev/null || true)"
-          [ -n "$dec" ] || {
-            result="${result}%${hex}"
-            continue
-          }
-          oct="$(printf '%03o' "$dec")"
-          result="${result}$(printf "\\$oct")"
-          continue
-          ;;
-      esac
-    fi
-
-    if [ "$char" = "\\" ] && [ "${#value}" -ge 3 ]; then
-      marker="${value%"${value#?}"}"
-      hex="${value#?}"
-      hex="${hex%"${hex#??}"}"
-      case "$marker$hex" in
-        x[0-9A-Fa-f][0-9A-Fa-f]|X[0-9A-Fa-f][0-9A-Fa-f])
-          value="${value#???}"
-          dec="$(printf '%d' "0x$hex" 2>/dev/null || true)"
-          [ -n "$dec" ] || {
-            result="${result}\\${marker}${hex}"
-            continue
-          }
-          oct="$(printf '%03o' "$dec")"
-          result="${result}$(printf "\\$oct")"
-          continue
-          ;;
-      esac
-    fi
-
-    result="${result}${char}"
-  done
-
-  printf '%s\n' "$result"
+  value="$(printf '%s' "$value" | sed 's/+/ /g; s/%/\\x/g')"
+  printf '%b' "$value"
 }
 
 decode_meta_value() {
@@ -116,6 +71,7 @@ build_type_label() {
   scheme="$1"
   transport="$2"
   security="$3"
+  from_json="${4:-false}"
 
   case "$scheme" in
     vless) scheme_label="VLESS" ;;
@@ -130,6 +86,7 @@ build_type_label() {
     tcp) transport_label="TCP" ;;
     grpc) transport_label="GRPC" ;;
     ws) transport_label="WS" ;;
+    xhttp) transport_label="XHTTP" ;;
     httpupgrade) transport_label="HTTPUPGRADE" ;;
     hysteria) transport_label="HYSTERIA" ;;
     *) transport_label="$(printf '%s' "$transport" | awk '{print toupper($0)}')" ;;
@@ -142,10 +99,17 @@ build_type_label() {
     *) security_label="$(printf '%s' "$security" | awk '{print toupper($0)}')" ;;
   esac
 
-  printf '%s / %s / %s\n' \
-    "$scheme_label" \
-    "$transport_label" \
-    "$security_label"
+  if [ "$from_json" = "true" ]; then
+    printf '%s / %s / %s / JSON\n' \
+      "$scheme_label" \
+      "$transport_label" \
+      "$security_label"
+  else
+    printf '%s / %s / %s\n' \
+      "$scheme_label" \
+      "$transport_label" \
+      "$security_label"
+  fi
 }
 
 is_helper_subscription_entry() {
@@ -201,7 +165,7 @@ collect_subscription_notices() {
     return 0
   }
 
-  while IFS= read -r line || [ -n "$line" ]; do
+  while IFS= read -r line || [ -n "${line:-}" ]; do
     line="$(printf '%s' "$line" | sed 's/\r$//;s/^[[:space:]]*//;s/[[:space:]]*$//')"
     [ -n "$line" ] || continue
     case "$line" in
@@ -309,7 +273,7 @@ extract_links_from_json_config() {
     return 0
   }
 
-  while IFS= read -r item || [ -n "$item" ]; do
+  while IFS= read -r item || [ -n "${item:-}" ]; do
     [ -n "${item:-}" ] || continue
     protocol="$(printf '%s' "$item" | jq -r '.protocol // empty' 2>/dev/null)"
 
@@ -650,6 +614,77 @@ set_update_schedule() {
   log_msg "update schedule saved: $schedule"
 }
 
+fetch_subscription_with_profile() {
+  profile="${1:-fallback}"
+  url="$2"
+  body_file="$3"
+  headers_file="$4"
+  error_file="$5"
+  device_id="$6"
+
+  case "$profile" in
+    happ)
+      curl -fsSL \
+        --connect-timeout 20 \
+        --max-time 120 \
+        --retry 2 \
+        --retry-delay 1 \
+        --compressed \
+        -A 'Happ/1.0' \
+        -H 'Accept: */*' \
+        -H 'User-Agent: Happ/1.0' \
+        -H "X-Hwid: ${device_id}" \
+        -H "X-Device-Id: ${device_id}" \
+        -H "Device-Id: ${device_id}" \
+        -H "Hwid: ${device_id}" \
+        -D "$headers_file" \
+        "$url" \
+        -o "$body_file" \
+        2>"$error_file"
+      ;;
+    v2raytun)
+      curl -fsSL \
+        --connect-timeout 20 \
+        --max-time 120 \
+        --retry 1 \
+        --retry-delay 1 \
+        --compressed \
+        -A 'v2rayTun/1.0' \
+        -H 'Accept: */*' \
+        -H 'User-Agent: v2rayTun/1.0' \
+        -H 'X-Requested-With: v2rayTun' \
+        -H "X-Hwid: ${device_id}" \
+        -H "X-Device-Id: ${device_id}" \
+        -H "Device-Id: ${device_id}" \
+        -H "Hwid: ${device_id}" \
+        -D "$headers_file" \
+        "$url" \
+        -o "$body_file" \
+        2>"$error_file"
+      ;;
+    fallback|*)
+      curl -fsSLk \
+        --http1.1 \
+        --connect-timeout 20 \
+        --max-time 120 \
+        --retry 1 \
+        --retry-delay 1 \
+        --compressed \
+        -A 'Mozilla/5.0' \
+        -H 'Accept: */*' \
+        -H 'User-Agent: Mozilla/5.0' \
+        -H "X-Hwid: ${device_id}" \
+        -H "X-Device-Id: ${device_id}" \
+        -H "Device-Id: ${device_id}" \
+        -H "Hwid: ${device_id}" \
+        -D "$headers_file" \
+        "$url" \
+        -o "$body_file" \
+        2>"$error_file"
+      ;;
+  esac
+}
+
 fetch_subscription() {
   init_storage_files
   clear_subscription_error
@@ -667,52 +702,19 @@ fetch_subscription() {
   tmp_error="$(mktemp)"
   device_id="$(get_client_device_id)"
 
-  curl_exit=0
-  if curl -fsSL \
-    --connect-timeout 20 \
-    --max-time 120 \
-    --retry 2 \
-    --retry-delay 1 \
-    --compressed \
-    -A 'Happ/1.0' \
-    -H 'Accept: */*' \
-    -H 'User-Agent: Happ/1.0' \
-    -H "X-Hwid: ${device_id}" \
-    -H "X-Device-Id: ${device_id}" \
-    -H "Device-Id: ${device_id}" \
-    -H "Hwid: ${device_id}" \
-    -D "$tmp_headers" \
-    "$url" \
-    -o "$tmp_body" \
-    2>"$tmp_error"; then
-    curl_exit=0
-  else
-    curl_exit="$?"
+  curl_exit=1
+  used_profile=''
+  for fetch_profile in happ v2raytun fallback; do
     : > "$tmp_body"
     : > "$tmp_headers"
-    if curl -fsSLk \
-      --http1.1 \
-      --connect-timeout 20 \
-      --max-time 120 \
-      --retry 1 \
-      --retry-delay 1 \
-      --compressed \
-      -A 'Happ/1.0' \
-      -H 'Accept: */*' \
-      -H 'User-Agent: Happ/1.0' \
-      -H "X-Hwid: ${device_id}" \
-      -H "X-Device-Id: ${device_id}" \
-      -H "Device-Id: ${device_id}" \
-      -H "Hwid: ${device_id}" \
-      -D "$tmp_headers" \
-      "$url" \
-      -o "$tmp_body" \
-      2>"$tmp_error"; then
+    : > "$tmp_error"
+    if fetch_subscription_with_profile "$fetch_profile" "$url" "$tmp_body" "$tmp_headers" "$tmp_error" "$device_id"; then
       curl_exit=0
-    else
-      curl_exit="$?"
+      used_profile="$fetch_profile"
+      break
     fi
-  fi
+    curl_exit="$?"
+  done
 
   if [ "${curl_exit:-0}" -ne 0 ] 2>/dev/null; then
     error_line="$(tr '\r\n' ' ' < "$tmp_error" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//' | cut -c1-220)"
@@ -730,7 +732,11 @@ fetch_subscription() {
   mv "$tmp_headers" "$HEADER_FILE"
   rm -f "$tmp_error"
   clear_subscription_error
-  log_msg "subscription fetched"
+  if [ -n "${used_profile:-}" ]; then
+    log_msg "subscription fetched with profile: $used_profile"
+  else
+    log_msg "subscription fetched"
+  fi
 }
 
 parse_subscription_meta() {
@@ -841,6 +847,7 @@ parse_subscription() {
   decoded_file=''
   json_file=''
   json_links_file=''
+  source_links_from_json='false'
   count=0
 
   compact="$(tr -d '\r\n' < "$RAW_FILE")"
@@ -848,7 +855,7 @@ parse_subscription() {
     decoded="$(printf '%s' "$compact" | base64 -d 2>/dev/null || true)"
     if [ -n "$decoded" ]; then
       decoded_file="$(mktemp)"
-      printf '%s\n' "$decoded" > "$decoded_file"
+      printf '%s' "$decoded" > "$decoded_file"
       parse_input_file="$decoded_file"
     fi
   fi
@@ -860,11 +867,12 @@ parse_subscription() {
     extract_links_from_json_config "$json_file" > "$json_links_file"
     if [ -s "$json_links_file" ]; then
       parse_input_file="$json_links_file"
+      source_links_from_json='true'
     fi
   fi
 
   tmp_list="$(mktemp)"
-  while IFS= read -r line || [ -n "$line" ]; do
+  while IFS= read -r line || [ -n "${line:-}" ]; do
     line="$(printf '%s' "$line" | sed 's/\r$//;s/^[[:space:]]*//;s/[[:space:]]*$//')"
     [ -n "$line" ] || continue
     case "$line" in
@@ -889,7 +897,7 @@ parse_subscription() {
         scheme="${url%%://*}"
         transport="$(get_server_transport "$url")"
         security="$(get_server_security "$url")"
-        type_label="$(build_type_label "$scheme" "$transport" "$security")"
+        type_label="$(build_type_label "$scheme" "$transport" "$security" "$source_links_from_json")"
         unsupported_flag="false"
         unsupported_reason=""
         maybe_unsupported_flag="false"
