@@ -25,6 +25,7 @@ Obhodiq — это дополнение для [Podkop](https://github.com/itdog
 - [Что важно понимать](#что-важно-понимать)
 - [Если подписка не заработала](#если-подписка-не-заработала)
 - [Проверка и статус](#проверка-и-статус)
+- [Поддержать](#поддержать)
 
 ## Демо-проверка
 
@@ -299,4 +300,18 @@ apk del obhodiq
 - OpenWrt `25.12.5` с `apk`
 - Podkop `0.7.19-r1`
 - Podkop `0.7.20-r1`
+
+## Поддержать
+
+Если Obhodiq оказался вам полезен и вы хотите поддержать развитие проекта, можно воспользоваться любым удобным способом ниже.
+
+[![CloudTips Донат](https://img.shields.io/badge/CloudTips-Донат-2ea44f?style=for-the-badge)](https://pay.cloudtips.ru/p/13b7f0a4)
+
+|  |  |
+|---|---|
+| ![QR USDT TRC20](images/support-usdt-trc20.png) | ![QR USDT BEP20](images/support-usdt-bep20.png) |
+| **USDT (TRC20 / Tron)** | **USDT (BEP20 / BNB Smart Chain)** |
+| `TYmyHohGWZWGrfb7fKHhCNDX6cvC81jMrU` | `0x038feAFa22c8FDC8dB98CAd1943a64545B42CB0d` |
+
+Спасибо за поддержку проекта.
 

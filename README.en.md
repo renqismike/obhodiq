@@ -289,3 +289,17 @@ The latest checks also confirmed:
 - clean `apk` install after full Obhodiq removal
 - clean `ipk` install on a real router after full Obhodiq removal
 - Obhodiq removal without removing or breaking Podkop itself
+
+## Support
+
+If Obhodiq was useful to you and you want to support further development, you can use any of the options below.
+
+[![CloudTips Donate](https://img.shields.io/badge/CloudTips-Donate-2ea44f?style=for-the-badge)](https://pay.cloudtips.ru/p/13b7f0a4)
+
+|  |  |
+|---|---|
+| ![QR USDT TRC20](images/support-usdt-trc20.png) | ![QR USDT BEP20](images/support-usdt-bep20.png) |
+| **USDT (TRC20 / Tron)** | **USDT (BEP20 / BNB Smart Chain)** |
+| `TYmyHohGWZWGrfb7fKHhCNDX6cvC81jMrU` | `0x038feAFa22c8FDC8dB98CAd1943a64545B42CB0d` |
+
+Thank you for supporting the project.
