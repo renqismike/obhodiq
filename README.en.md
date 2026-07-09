@@ -156,7 +156,13 @@ sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/mai
 Then install Obhodiq:
 
 ```sh
-sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh)
+sh <(wget -O - https://renqismike.github.io/obhodiq/install.sh)
+```
+
+If GitHub Pages is routed poorly by the provider, fallback command:
+
+```sh
+sh <(wget -O - https://github.com/renqismike/obhodiq/raw/main/install.sh)
 ```
 
 ## Manual install
@@ -189,7 +195,13 @@ The commands below work the same for Obhodiq installed either through `opkg` (`i
 Recommended full removal:
 
 ```sh
-sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh)
+sh <(wget -O - https://renqismike.github.io/obhodiq/uninstall.sh)
+```
+
+Fallback command:
+
+```sh
+sh <(wget -O - https://github.com/renqismike/obhodiq/raw/main/uninstall.sh)
 ```
 
 Manual package removal with `opkg`:

@@ -172,7 +172,13 @@ sh <(wget -O - https://raw.githubusercontent.com/itdoginfo/podkop/refs/heads/mai
 Потом установи Obhodiq:
 
 ```sh
-sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/install.sh)
+sh <(wget -O - https://renqismike.github.io/obhodiq/install.sh)
+```
+
+Если у провайдера плохо открывается GitHub Pages, запасной вариант:
+
+```sh
+sh <(wget -O - https://github.com/renqismike/obhodiq/raw/main/install.sh)
 ```
 
 ## Ручная установка
@@ -205,7 +211,13 @@ apk add --allow-untrusted obhodiq-0.2.0.apk luci-app-obhodiq-0.2.0.apk
 Рекомендуемое полное удаление:
 
 ```sh
-sh <(wget -O - https://raw.githubusercontent.com/renqismike/obhodiq/main/uninstall.sh)
+sh <(wget -O - https://renqismike.github.io/obhodiq/uninstall.sh)
+```
+
+Запасной вариант:
+
+```sh
+sh <(wget -O - https://github.com/renqismike/obhodiq/raw/main/uninstall.sh)
 ```
 
 Ручное удаление пакетов через `opkg`:
