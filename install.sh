@@ -214,6 +214,10 @@ backup_existing_state() {
   cp -fpR /etc/obhodiq/. "$STATE_BACKUP_DIR"/ 2>/dev/null || true
 }
 
+cleanup_config_leftovers() {
+  rm -f /etc/config/obhodiq-opkg || true
+}
+
 restore_existing_config() {
   command -v uci >/dev/null 2>&1 || return 0
   [ -s "$CONFIG_BACKUP_FILE" ] || return 0
@@ -229,10 +233,6 @@ restore_existing_config() {
   done < "$CONFIG_BACKUP_FILE"
 
   uci -q commit obhodiq || true
-
-  if [ -f /etc/config/obhodiq-opkg ]; then
-    rm -f /etc/config/obhodiq-opkg || true
-  fi
 }
 
 restore_existing_state() {
@@ -322,6 +322,7 @@ main() {
   install_package_files "$backend_pkg" "$luci_pkg"
   restore_existing_config
   restore_existing_state
+  cleanup_config_leftovers
 
   if ask_ru_package; then
     set_obhodiq_lang "ru"
@@ -329,6 +330,7 @@ main() {
     set_obhodiq_lang "en"
   fi
 
+  cleanup_config_leftovers
   /etc/init.d/obhodiq enable >/dev/null 2>&1 || true
   /etc/init.d/obhodiq restart >/dev/null 2>&1 || true
 
