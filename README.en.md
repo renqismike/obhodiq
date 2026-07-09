@@ -214,9 +214,7 @@ Important:
 
 ## Interface
 
-<p align="center">
-  <img src="images/obhodiq-ui.png" alt="Obhodiq interface screenshot" width="1100">
-</p>
+![Obhodiq interface screenshot](images/obhodiq-ui.png)
 
 Main actions:
 

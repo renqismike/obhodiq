@@ -230,9 +230,7 @@ apk del obhodiq
 
 ## Интерфейс
 
-<p align="center">
-  <img src="images/obhodiq-ui.png" alt="Скриншот интерфейса Obhodiq" width="1100">
-</p>
+![Скриншот интерфейса Obhodiq](images/obhodiq-ui.png)
 
 Основные действия:
 
