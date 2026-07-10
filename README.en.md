@@ -298,20 +298,25 @@ If Obhodiq was useful to you and you want to support further development, you ca
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="images/support-usdt-trc20.png" alt="QR USDT TRC20" width="320">
+    <td align="center" width="33%">
+      <img src="images/support-usdt-trc20.png" alt="QR USDT TRC20" width="200">
     </td>
-    <td align="center" width="50%">
-      <img src="images/support-usdt-bep20.png" alt="QR USDT BEP20" width="320">
+    <td align="center" width="33%">
+      <img src="images/support-usdt-bep20.png" alt="QR USDT BEP20" width="200">
+    </td>
+    <td align="center" width="33%">
+      <img src="images/support-binance.png" alt="QR Binance Pay" width="200">
     </td>
   </tr>
   <tr>
     <td align="center"><strong>USDT (TRC20 / Tron)</strong></td>
     <td align="center"><strong>USDT (BEP20 / BNB Smart Chain)</strong></td>
+    <td align="center"><strong>Binance Pay</strong></td>
   </tr>
   <tr>
     <td align="center"><code>TYmyHohGWZWGrfb7fKHhCNDX6cvC81jMrU</code></td>
     <td align="center"><code>0x038feAFa22c8FDC8dB98CAd1943a64545B42CB0d</code></td>
+    <td align="center"><code>Binance Pay</code></td>
   </tr>
 </table>
 
