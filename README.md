@@ -316,7 +316,7 @@ apk del obhodiq
       <img src="images/support-usdt-bep20.png" alt="QR USDT BEP20" width="200">
     </td>
     <td align="center" width="33%">
-      <img src="images/support-binance.png" alt="QR Binance Pay" width="200">
+      <img src="images/support-binance.png" alt="QR Binance Pay" width="235">
     </td>
   </tr>
   <tr>
