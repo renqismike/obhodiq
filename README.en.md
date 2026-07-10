@@ -305,7 +305,7 @@ If Obhodiq was useful to you and you want to support further development, you ca
       <img src="images/support-usdt-bep20.png" alt="QR USDT BEP20" width="200">
     </td>
     <td align="center" width="33%">
-      <img src="images/support-binance.png" alt="QR Binance Pay" width="240">
+      <img src="images/support-binance.png" alt="QR Binance Pay" width="200">
     </td>
   </tr>
   <tr>
