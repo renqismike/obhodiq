@@ -142,7 +142,7 @@ Useful references:
 
 - OpenWrt
 - original [Podkop](https://github.com/itdoginfo/podkop) already installed
-- recommended Podkop versions: `0.7.19`, `0.7.20`, `0.7.21`
+- recommended Podkop versions: `0.7.19-0.7.21`
 - recommended OpenWrt versions: `24.10.6`, `25.12.5`
 
 ## Install
