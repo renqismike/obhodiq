@@ -298,9 +298,7 @@ apk del obhodiq
 
 - OpenWrt `24.10.6` с `opkg`
 - OpenWrt `25.12.5` с `apk`
-- Podkop `0.7.19-r1`
-- Podkop `0.7.20-r1`
-- Podkop `0.7.21-r1`
+- Podkop `0.7.19-r1` - `0.7.21-r1`
 
 ## Поддержать
 

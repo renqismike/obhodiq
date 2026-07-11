@@ -281,9 +281,7 @@ Tested during development on:
 
 - OpenWrt `24.10.6` with `opkg`
 - OpenWrt `25.12.5` with `apk`
-- Podkop `0.7.19-r1`
-- Podkop `0.7.20-r1`
-- Podkop `0.7.21-r1`
+- Podkop `0.7.19-r1` - `0.7.21-r1`
 
 The latest checks also confirmed:
 
